@@ -4,7 +4,7 @@ Multi-platform LLM conversation alignment and comparison toolkit.
 
 여러 LLM 플랫폼(ChatGPT, Claude, Gemini)에서 export한 대화 로그(JSONL)를 입력으로 받아, 플랫폼 독립적인 **중간 표현(Intermediate Representation, IR)**을 생성하는 Python 도구입니다.
 
-**현재 버전**: v0.2.0 (QAUnitIR 구현 완료)
+**현재 버전**: v0.3.0 (MultiModelSessionIR 구현 완료)
 
 ## Features
 
@@ -13,8 +13,11 @@ Multi-platform LLM conversation alignment and comparison toolkit.
 - ✅ **Query Hash**: 동일 질문 탐지를 위한 해시 생성
 - ✅ **QAUnitIR**: Q&A 단위 추출 및 질문 요약 자동 추출
 - ✅ **Heuristic Extractor**: ChatGPT/Gemini의 "질문 정리" 섹션 자동 파싱
+- ✅ **MultiModelSessionIR**: 크로스 플랫폼 정렬 및 질문 매칭
+- ✅ **Hash-based Matching**: 동일 질문 자동 그룹핑
+- ✅ **Dependency Tracking**: 순차적 질문 의존성 추적
 - ✅ **DB 불필요**: JSON 파일 기반 저장
-- 🚧 **MultiModelSessionIR**: 크로스 플랫폼 정렬 (v0.3 예정)
+- 🚧 **LLM Integration**: LLM 기반 질문 매칭 (v0.4 예정)
 
 ## Architecture
 
