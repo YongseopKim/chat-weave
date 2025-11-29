@@ -38,6 +38,14 @@ def temp_output_dir(tmp_path):
 
 
 @pytest.fixture
+def empty_session_dir(tmp_path):
+    """Empty directory with no JSONL files."""
+    empty_dir = tmp_path / "empty_session"
+    empty_dir.mkdir()
+    return empty_dir
+
+
+@pytest.fixture
 def sample_conversation_ir(chatgpt_jsonl):
     """Parse ChatGPT JSONL into ConversationIR."""
     from chatweave.parsers.unified import UnifiedParser
