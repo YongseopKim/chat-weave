@@ -334,30 +334,60 @@ class EmbeddingQueryMatcher(QueryMatcher):
 
 ---
 
-### v0.2: QA Extraction 🚧 **다음 단계**
+### v0.2: QA Extraction ✅ **완료**
 
 **목표**: QAUnitIR 생성 및 질문 추출
 
-**구현 항목**:
-1. `chatweave/models/qa_unit.py`
-   - QAUnit, QAUnitIR dataclass
+**완료일**: 2025-11-30
+**테스트**: 106/106 passed, 98% coverage
 
-2. `chatweave/extractors/`
+**구현 항목**:
+1. `chatweave/models/qa_unit.py` ✅
+   - QAUnit, QAUnitIR dataclass
+   - JSON serialization 지원
+
+2. `chatweave/extractors/` ✅
    - `base.py`: QueryExtractor ABC
    - `heuristic.py`: 규칙 기반 추출기
-     - "## 질문 정리", "## 1. 질문" 등 패턴 매칭
+     - ChatGPT: `## 1\. 질문 정리` 패턴 지원
+     - Gemini: `## 🧐 질문 정리` 이모지 패턴 지원
+     - Claude: 패턴 없음 (None 반환)
+   - `__init__.py`: 모듈 export
 
-3. `chatweave/pipeline/build_qa_ir.py`
+3. `chatweave/pipeline/build_qa_ir.py` ✅
    - ConversationIR → QAUnitIR 변환 로직
+   - 연속된 user/assistant 메시지 자동 그룹핑
+   - query_hash 자동 전파
+   - `__init__.py`: build_qa_ir export
 
-4. `tests/test_extractors.py`
+4. `chatweave/io/ir_writer.py` 업데이트 ✅
+   - `write_qa_unit_ir()` 함수 추가
+   - QAUnitIR JSON 직렬화
 
-**산출물**:
+5. `tests/` - 39개 신규 테스트 추가 ✅
+   - `models/test_qa_unit.py`: QAUnit, QAUnitIR 테스트 (12 tests)
+   - `extractors/test_heuristic.py`: 질문 추출 패턴 테스트 (14 tests)
+   - `pipeline/test_build_qa_ir.py`: QA 파이프라인 테스트 (13 tests)
+   - `io/test_ir_writer.py`: write_qa_unit_ir 테스트 추가 (4 tests)
+   - `conftest.py`: sample_conversation_ir, sample_qa_unit_ir fixture 추가
+
+**산출물**: ✅
 - `ir/qa-unit-ir/` 디렉토리에 플랫폼별 JSON 생성
+- 샘플 세션 3개 플랫폼 QAUnit 추출 완료
+  - `chatgpt_chatgpt-692ad5eb-bb18-8320-bd15-9ae4442dcb26.json` (4 QA units)
+  - `claude_claude-43917b24-af4b-48b2-9507-19841ca73e37.json` (4 QA units)
+  - `gemini_gemini-60e8895807bb7c29.json` (4 QA units)
+
+**주요 기능**:
+- 자동 QA 경계 탐지 (연속 user → 연속 assistant = 1 QA)
+- ChatGPT/Gemini "질문 정리" 섹션 자동 파싱
+- 빈 user content 처리 (Claude 케이스)
+- 다중 user/assistant 메시지 지원
+- Sequential QA ID 생성 (q0000, q0001, ...)
 
 ---
 
-### v0.3: Session Alignment
+### v0.3: Session Alignment 🚧 **다음 단계**
 
 **목표**: MultiModelSessionIR 생성 및 기본 매칭
 
