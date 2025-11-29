@@ -110,7 +110,7 @@ class TestUnifiedParser:
             f.write('{"role":"user","content":"test","timestamp":""}\n')
 
         parser = UnifiedParser()
-        with pytest.raises(ValueError, match="Unsupported platform"):
+        with pytest.raises(ValueError, match="Cannot infer platform"):
             parser.parse(invalid_jsonl)
 
     def test_missing_metadata(self, tmp_path):

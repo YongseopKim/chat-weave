@@ -4,7 +4,7 @@ Multi-platform LLM conversation alignment and comparison toolkit.
 
 여러 LLM 플랫폼(ChatGPT, Claude, Gemini)에서 export한 대화 로그(JSONL)를 입력으로 받아, 플랫폼 독립적인 **중간 표현(Intermediate Representation, IR)**을 생성하는 Python 도구입니다.
 
-**현재 버전**: v0.3.0 (MultiModelSessionIR 구현 완료)
+**현재 버전**: v0.4.0 (CLI 확장 및 플랫폼 추론 기능 추가)
 
 ## Features
 
@@ -16,9 +16,13 @@ Multi-platform LLM conversation alignment and comparison toolkit.
 - ✅ **MultiModelSessionIR**: 크로스 플랫폼 정렬 및 질문 매칭
 - ✅ **Hash-based Matching**: 동일 질문 자동 그룹핑
 - ✅ **Dependency Tracking**: 순차적 질문 의존성 추적
-- ✅ **CLI**: 세션 디렉토리에서 IR 생성 (`chatweave build-ir`)
+- ✅ **플랫폼 자동 추론**: metadata → 파일명 패턴 → 명시적 지정
+- ✅ **유연한 입력**: 단일 파일, 여러 파일, 디렉토리 모두 지원
+- ✅ **Progress 추적**: progress.json으로 실행 단계 기록
+- ✅ **로깅 옵션**: 콘솔/파일 로깅, quiet 모드 지원
+- ✅ **CLI 확장**: 다양한 입력 방식 및 옵션 지원
 - ✅ **DB 불필요**: JSON 파일 기반 저장
-- 🚧 **LLM Integration**: LLM 기반 질문 매칭 (v0.4 예정)
+- 🚧 **LLM Integration**: LLM 기반 질문 매칭 (v0.5 예정)
 
 ## Architecture
 
@@ -86,19 +90,50 @@ pip install -e ".[dev]"
 
 ### CLI
 
+**기본 사용:**
 ```bash
-# 세션 디렉토리에서 IR 생성
+# 디렉토리 입력
 chatweave build-ir ./examples/sample-session/
 
+# 단일 파일 입력
+chatweave build-ir ./chatgpt_export.jsonl
+
+# 여러 파일 입력
+chatweave build-ir chatgpt.jsonl claude.jsonl gemini.jsonl
+```
+
+**옵션:**
+```bash
 # 출력 디렉토리 지정
-chatweave build-ir ./examples/sample-session/ --output ./my-output/
+chatweave build-ir ./session/ --output ./ir/
+
+# 작업 디렉토리 지정 (progress.json 위치)
+chatweave build-ir ./session/ --working-dir ./tmp/
+
+# 플랫폼 명시적 지정 (단일 파일만)
+chatweave build-ir ./unknown.jsonl --platform chatgpt
+
+# 로그 파일 저장
+chatweave build-ir ./session/ --log-file ./chatweave.log
 
 # 미리보기 (파일 작성 안 함)
-chatweave build-ir ./examples/sample-session/ --dry-run
+chatweave build-ir ./session/ --dry-run
 
 # 상세 출력
-chatweave build-ir ./examples/sample-session/ --verbose
+chatweave build-ir ./session/ --verbose
+
+# 조용한 모드 (stdout 억제)
+chatweave build-ir ./session/ --quiet
 ```
+
+**플랫폼 추론:**
+
+CLI는 다음 우선순위로 플랫폼을 추론합니다:
+1. `--platform` 옵션 (최우선)
+2. JSONL metadata의 `platform` 필드
+3. 파일명 패턴 (`chatgpt_*.jsonl`, `claude_*.jsonl`, `gemini_*.jsonl`)
+
+추론 실패 시 에러 메시지를 표시합니다.
 
 ### Python API
 
@@ -259,7 +294,10 @@ chatweave/
 │   └── util/
 │       ├── __init__.py
 │       ├── text_normalization.py # 텍스트 정규화
-│       └── hashing.py            # Query hash 생성
+│       ├── hashing.py            # Query hash 생성
+│       ├── platform_inference.py # 플랫폼 자동 추론
+│       ├── logging_config.py     # 로깅 설정
+│       └── progress.py           # Progress 추적
 │
 ├── tests/
 │   ├── conftest.py
@@ -269,7 +307,9 @@ chatweave/
 │   │   └── test_session.py
 │   ├── util/
 │   │   ├── test_text_normalization.py
-│   │   └── test_hashing.py
+│   │   ├── test_hashing.py
+│   │   ├── test_platform_inference.py
+│   │   └── test_progress.py
 │   ├── io/
 │   │   ├── test_jsonl_loader.py
 │   │   └── test_ir_writer.py

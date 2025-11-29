@@ -2,12 +2,13 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import cast
+from typing import Optional
 
 from chatweave.io.jsonl_loader import load_jsonl
 from chatweave.models.conversation import ConversationIR, MessageIR, Platform
 from chatweave.parsers.base import ConversationParser
 from chatweave.util.hashing import compute_query_hash
+from chatweave.util.platform_inference import infer_platform
 from chatweave.util.text_normalization import normalize_text
 
 
@@ -22,30 +23,27 @@ class UnifiedParser(ConversationParser):
         """Initialize unified parser."""
         self.platform = "unified"
 
-    def parse(self, jsonl_path: Path) -> ConversationIR:
+    def parse(
+        self, jsonl_path: Path, platform_override: Optional[Platform] = None
+    ) -> ConversationIR:
         """Parse JSONL file and convert to ConversationIR.
 
         Args:
             jsonl_path: Path to JSONL export file
+            platform_override: Optional platform override (from CLI --platform option)
 
         Returns:
             ConversationIR object with normalized messages
 
         Raises:
-            ValueError: If platform is not supported or format is invalid
+            ValueError: If platform cannot be inferred or format is invalid
             FileNotFoundError: If file does not exist
         """
         # Load JSONL file
         metadata, messages = load_jsonl(jsonl_path)
 
-        # Extract platform from metadata
-        platform_str = metadata.get("platform")
-        if platform_str not in ("chatgpt", "claude", "gemini"):
-            raise ValueError(
-                f"Unsupported platform: {platform_str}. "
-                f"Expected one of: chatgpt, claude, gemini"
-            )
-        platform = cast(Platform, platform_str)
+        # Infer platform with priority: override > metadata > filename
+        platform = infer_platform(jsonl_path, metadata, platform_override)
 
         # Generate conversation ID from filename or URL
         conversation_id = self._generate_conversation_id(jsonl_path, metadata)
