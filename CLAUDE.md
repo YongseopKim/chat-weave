@@ -1,0 +1,2 @@
+- PLAN 할 때 @README.md 와 @PLAN.md 를 반드시 먼저 참고한다.
+- ACT 할 때 venv 설정을 하고 진행한다.
