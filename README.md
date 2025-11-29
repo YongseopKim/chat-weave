@@ -257,11 +257,17 @@ chatweave/
 │
 ├── tests/
 │   ├── conftest.py
-│   ├── fixtures/
-│   │   └── sample_session/
-│   ├── test_parsers.py
-│   ├── test_pipeline.py
-│   └── test_matchers.py
+│   ├── models/
+│   │   └── test_conversation.py
+│   ├── util/
+│   │   ├── test_text_normalization.py
+│   │   └── test_hashing.py
+│   ├── io/
+│   │   ├── test_jsonl_loader.py
+│   │   └── test_ir_writer.py
+│   ├── parsers/
+│   │   └── test_unified.py
+│   └── (test_pipeline.py, test_matchers.py - v0.2+)
 │
 └── examples/
     └── sample-session/

@@ -294,7 +294,7 @@ class EmbeddingQueryMatcher(QueryMatcher):
 **목표**: 기본 파싱 및 ConversationIR 생성
 
 **완료일**: 2025-11-30
-**테스트**: 8/8 passed, 92% coverage
+**테스트**: 63/63 passed, 97% coverage
 
 **구현 항목**:
 1. `chatweave/models/conversation.py`
@@ -316,9 +316,14 @@ class EmbeddingQueryMatcher(QueryMatcher):
    - `text_normalization.py`: 텍스트 정규화
    - `hashing.py`: query_hash 생성
 
-5. `tests/`
-   - 샘플 JSONL fixtures
-   - 파서 단위 테스트
+5. `tests/` - chatweave/ 구조에 맞춰 재구성
+   - `models/test_conversation.py`: MessageIR, ConversationIR 테스트 (13 tests)
+   - `util/test_text_normalization.py`: normalize_text 테스트 (12 tests)
+   - `util/test_hashing.py`: compute_query_hash 테스트 (11 tests)
+   - `io/test_jsonl_loader.py`: load_jsonl 테스트 (11 tests)
+   - `io/test_ir_writer.py`: write_conversation_ir 테스트 (8 tests)
+   - `parsers/test_unified.py`: UnifiedParser 테스트 (8 tests)
+   - 모든 모듈에 대한 단위 테스트 및 엣지 케이스 커버
 
 **산출물**: ✅
 - `ir/conversation-ir/` 디렉토리에 플랫폼별 JSON 생성

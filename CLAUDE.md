@@ -1,2 +1,2 @@
-- PLAN 할 때 @README.md 와 @PLAN.md 를 반드시 먼저 참고한다.
+- PLAN 할 때 @README.md 와 @PLAN.md 를 반드시 먼저 참고하며, `git log`를 통해 기존 commit 메시지들을 확인하여 참고한다.
 - ACT 할 때 venv 설정을 하고 진행한다.
