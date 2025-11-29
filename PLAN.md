@@ -387,25 +387,51 @@ class EmbeddingQueryMatcher(QueryMatcher):
 
 ---
 
-### v0.3: Session Alignment 🚧 **다음 단계**
+### v0.3: Session Alignment ✅ **완료**
 
 **목표**: MultiModelSessionIR 생성 및 기본 매칭
 
+**완료일**: 2025-11-30
+**테스트**: 141/141 passed, 98% coverage
+
 **구현 항목**:
-1. `chatweave/models/session.py`
+1. `chatweave/models/session.py` ✅
    - PerPlatformQARef, PromptGroup, MultiModelSessionIR dataclass
+   - JSON serialization 지원
 
-2. `chatweave/matchers/`
+2. `chatweave/matchers/` ✅
    - `base.py`: QueryMatcher ABC
-   - `hash.py`: query_hash 기반 매칭기
+   - `hash.py`: HashQueryMatcher (user_query_hash 기반 매칭)
+   - `__init__.py`: 모듈 export
 
-3. `chatweave/pipeline/build_session_ir.py`
+3. `chatweave/pipeline/build_session_ir.py` ✅
    - QAUnitIR[] → MultiModelSessionIR 변환 로직
+   - 순차적 의존성 추적 (depends_on)
+   - Canonical prompt 선택 (플랫폼 알파벳순)
+   - missing_prompt, missing_context 플래그 처리
 
-4. `tests/test_matchers.py`
+4. `chatweave/io/ir_writer.py` 업데이트 ✅
+   - `write_session_ir()` 함수 추가
 
-**산출물**:
+5. `tests/` - 35개 신규 테스트 추가 ✅
+   - `models/test_session.py`: PerPlatformQARef, PromptGroup, MultiModelSessionIR 테스트 (12 tests)
+   - `matchers/test_hash.py`: HashQueryMatcher 테스트 (7 tests)
+   - `pipeline/test_build_session_ir.py`: build_session_ir 테스트 (11 tests)
+   - `io/test_ir_writer.py`: write_session_ir 테스트 추가 (5 tests)
+   - `conftest.py`: sample_multi_qa_unit_ir, sample_session_ir fixture 추가
+
+**산출물**: ✅
 - `ir/session-ir/` 디렉토리에 세션 JSON 생성
+- 샘플 세션 MultiModelSessionIR 출력 완료
+  - `sample-session.json` (4 prompt groups, 3 platforms per group)
+
+**주요 기능**:
+- Hash 기반 질문 매칭 (3개 플랫폼, 동일 hash → 1 그룹)
+- 순차적 의존성 체인 (p0001→p0000, p0002→p0001, ...)
+- Canonical prompt 선택 (chatgpt > claude > gemini)
+- prompt_similarity: hash 매칭 시 1.0
+- missing_prompt: 빈 question_from_user 처리
+- language: null (v0.4에서 langdetect 적용 예정)
 
 ---
 

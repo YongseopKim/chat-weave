@@ -6,9 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from chatweave.io.ir_writer import write_conversation_ir, write_qa_unit_ir
+from chatweave.io.ir_writer import (
+    write_conversation_ir,
+    write_qa_unit_ir,
+    write_session_ir,
+)
 from chatweave.models.conversation import ConversationIR, MessageIR
 from chatweave.models.qa_unit import QAUnit, QAUnitIR
+from chatweave.models.session import (
+    MultiModelSessionIR,
+    PerPlatformQARef,
+    PromptGroup,
+)
 
 
 class TestWriteConversationIR:
@@ -347,3 +356,164 @@ class TestWriteQAUnitIR:
 
         assert data["qa_units"][0]["question_from_user"] == "안녕하세요 👋"
         assert data["qa_units"][0]["question_from_assistant_summary"] == "한국어 질문 정리"
+
+
+class TestWriteSessionIR:
+    """Tests for write_session_ir function."""
+
+    def test_write_basic_session_ir(self, tmp_path):
+        """Test writing a basic MultiModelSessionIR to JSON file."""
+        session_ir = MultiModelSessionIR(
+            session_id="test-session",
+            platforms=["chatgpt"],
+            conversations=[
+                {"platform": "chatgpt", "conversation_id": "test-123"}
+            ],
+            prompts=[
+                PromptGroup(
+                    prompt_key="p0000",
+                    canonical_prompt={
+                        "text": "Question 1",
+                        "language": None,
+                        "source": {"platform": "chatgpt", "qa_id": "q0000"},
+                    },
+                    per_platform=[
+                        PerPlatformQARef(
+                            platform="chatgpt",
+                            qa_id="q0000",
+                            conversation_id="test-123",
+                            prompt_similarity=1.0,
+                        )
+                    ],
+                )
+            ],
+        )
+
+        output_path = write_session_ir(session_ir, tmp_path)
+
+        assert output_path.exists()
+        assert output_path.parent == tmp_path
+        assert output_path.name == "test-session.json"
+
+        with open(output_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["schema"] == "multi-model-session-ir/v1"
+        assert data["session_id"] == "test-session"
+        assert data["platforms"] == ["chatgpt"]
+        assert len(data["conversations"]) == 1
+        assert len(data["prompts"]) == 1
+        assert data["prompts"][0]["prompt_key"] == "p0000"
+
+    def test_session_ir_directory_creation(self, tmp_path):
+        """Test that output directory is created if it doesn't exist."""
+        nested_dir = tmp_path / "nested" / "session-ir"
+
+        session_ir = MultiModelSessionIR(
+            session_id="test",
+            platforms=[],
+            conversations=[],
+            prompts=[],
+        )
+
+        output_path = write_session_ir(session_ir, nested_dir)
+
+        assert output_path.exists()
+        assert output_path.parent == nested_dir
+
+    def test_session_ir_filename_format(self, tmp_path):
+        """Test filename format for session IR."""
+        test_cases = [
+            "sample-session",
+            "multi-platform-test",
+            "2025-11-30-topic",
+        ]
+
+        for session_id in test_cases:
+            session_ir = MultiModelSessionIR(
+                session_id=session_id,
+                platforms=[],
+                conversations=[],
+                prompts=[],
+            )
+            output_path = write_session_ir(session_ir, tmp_path)
+            expected_filename = f"{session_id}.json"
+            assert output_path.name == expected_filename
+
+    def test_session_ir_utf8_encoding(self, tmp_path):
+        """Test that UTF-8 content is properly encoded."""
+        session_ir = MultiModelSessionIR(
+            session_id="korean-session",
+            platforms=["chatgpt"],
+            conversations=[
+                {"platform": "chatgpt", "conversation_id": "test"}
+            ],
+            prompts=[
+                PromptGroup(
+                    prompt_key="p0000",
+                    canonical_prompt={
+                        "text": "안녕하세요 👋",
+                        "language": None,
+                        "source": {"platform": "chatgpt", "qa_id": "q0000"},
+                    },
+                )
+            ],
+        )
+
+        output_path = write_session_ir(session_ir, tmp_path)
+
+        with open(output_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["prompts"][0]["canonical_prompt"]["text"] == "안녕하세요 👋"
+
+    def test_session_ir_multi_platform(self, tmp_path):
+        """Test writing session IR with multiple platforms."""
+        session_ir = MultiModelSessionIR(
+            session_id="multi-platform",
+            platforms=["chatgpt", "claude", "gemini"],
+            conversations=[
+                {"platform": "chatgpt", "conversation_id": "chat-1"},
+                {"platform": "claude", "conversation_id": "claude-1"},
+                {"platform": "gemini", "conversation_id": "gemini-1"},
+            ],
+            prompts=[
+                PromptGroup(
+                    prompt_key="p0000",
+                    canonical_prompt={
+                        "text": "Aligned question",
+                        "language": None,
+                        "source": {"platform": "chatgpt", "qa_id": "q0000"},
+                    },
+                    per_platform=[
+                        PerPlatformQARef(
+                            platform="chatgpt",
+                            qa_id="q0000",
+                            conversation_id="chat-1",
+                            prompt_similarity=1.0,
+                        ),
+                        PerPlatformQARef(
+                            platform="claude",
+                            qa_id="q0000",
+                            conversation_id="claude-1",
+                            prompt_similarity=1.0,
+                        ),
+                        PerPlatformQARef(
+                            platform="gemini",
+                            qa_id="q0000",
+                            conversation_id="gemini-1",
+                            prompt_similarity=1.0,
+                        ),
+                    ],
+                )
+            ],
+        )
+
+        output_path = write_session_ir(session_ir, tmp_path)
+
+        with open(output_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert len(data["platforms"]) == 3
+        assert len(data["conversations"]) == 3
+        assert len(data["prompts"][0]["per_platform"]) == 3

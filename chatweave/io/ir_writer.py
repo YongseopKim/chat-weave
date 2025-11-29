@@ -5,6 +5,7 @@ from pathlib import Path
 
 from chatweave.models.conversation import ConversationIR
 from chatweave.models.qa_unit import QAUnitIR
+from chatweave.models.session import MultiModelSessionIR
 
 
 def write_conversation_ir(
@@ -71,6 +72,41 @@ def write_qa_unit_ir(
 
     # Convert to dictionary
     ir_dict = qa_unit_ir.to_dict()
+
+    # Write to file
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(ir_dict, f, indent=indent, ensure_ascii=False)
+
+    return output_path
+
+
+def write_session_ir(
+    session_ir: MultiModelSessionIR, output_dir: Path, indent: int = 2
+) -> Path:
+    """Write MultiModelSessionIR to JSON file.
+
+    Output filename format: {session_id}.json
+
+    Args:
+        session_ir: MultiModelSessionIR object to save
+        output_dir: Directory to save JSON file
+        indent: JSON indentation level (default: 2)
+
+    Returns:
+        Path to written JSON file
+
+    Raises:
+        OSError: If directory creation or file writing fails
+    """
+    # Create output directory if it doesn't exist
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate filename
+    filename = f"{session_ir.session_id}.json"
+    output_path = output_dir / filename
+
+    # Convert to dictionary
+    ir_dict = session_ir.to_dict()
 
     # Write to file
     with open(output_path, "w", encoding="utf-8") as f:
