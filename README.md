@@ -68,6 +68,12 @@ pip install chatweave
 ```bash
 git clone https://github.com/dragon/chat-weave.git
 cd chat-weave
+
+# 가상환경 생성 및 활성화
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux
+# venv\Scripts\activate  # Windows
+
 pip install -e ".[dev]"
 ```
 
