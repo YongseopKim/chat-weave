@@ -16,6 +16,7 @@ Multi-platform LLM conversation alignment and comparison toolkit.
 - ✅ **MultiModelSessionIR**: 크로스 플랫폼 정렬 및 질문 매칭
 - ✅ **Hash-based Matching**: 동일 질문 자동 그룹핑
 - ✅ **Dependency Tracking**: 순차적 질문 의존성 추적
+- ✅ **CLI**: 세션 디렉토리에서 IR 생성 (`chatweave build-ir`)
 - ✅ **DB 불필요**: JSON 파일 기반 저장
 - 🚧 **LLM Integration**: LLM 기반 질문 매칭 (v0.4 예정)
 
@@ -81,7 +82,23 @@ source venv/bin/activate  # macOS/Linux
 pip install -e ".[dev]"
 ```
 
-## Usage (v0.1)
+## Usage
+
+### CLI
+
+```bash
+# 세션 디렉토리에서 IR 생성
+chatweave build-ir ./examples/sample-session/
+
+# 출력 디렉토리 지정
+chatweave build-ir ./examples/sample-session/ --output ./my-output/
+
+# 미리보기 (파일 작성 안 함)
+chatweave build-ir ./examples/sample-session/ --dry-run
+
+# 상세 출력
+chatweave build-ir ./examples/sample-session/ --verbose
+```
 
 ### Python API
 
@@ -107,13 +124,6 @@ for msg in conversation_ir.messages:
     if msg.role == "user":
         print(f"User: {msg.raw_content[:50]}...")
         print(f"Hash: {msg.query_hash}")
-```
-
-### CLI (v0.2 예정)
-
-```bash
-# 세션 디렉토리에서 IR 생성 (구현 예정)
-chatweave build-ir ./sessions/2025-11-29-topic/
 ```
 
 ## IR Schema
@@ -210,12 +220,10 @@ ConversationIR에서 질문-답변 단위를 추출
 chatweave/
 ├── pyproject.toml
 ├── README.md
-├── PLAN.md
 │
 ├── chatweave/
 │   ├── __init__.py
 │   ├── cli.py                    # CLI entry point
-│   ├── processor.py              # SessionProcessor
 │   │
 │   ├── models/                   # IR dataclass 정의
 │   │   ├── __init__.py
@@ -225,44 +233,40 @@ chatweave/
 │   │
 │   ├── io/                       # 파일 I/O
 │   │   ├── __init__.py
-│   │   ├── jsonl_loader.py       # JSONL 파싱
-│   │   ├── ir_writer.py          # IR → JSON 저장
-│   │   └── ir_reader.py          # JSON → IR 로딩
+│   │   ├── jsonl_loader.py       # JSONL 파일 읽기
+│   │   └── ir_writer.py          # IR → JSON 저장
 │   │
-│   ├── parsers/                  # 플랫폼별 파서
+│   ├── parsers/                  # 플랫폼 파서
 │   │   ├── __init__.py
 │   │   ├── base.py               # ConversationParser ABC
-│   │   ├── chatgpt.py
-│   │   ├── claude.py
-│   │   └── gemini.py
+│   │   └── unified.py            # UnifiedParser (모든 플랫폼 지원)
 │   │
 │   ├── pipeline/                 # IR 생성 파이프라인
 │   │   ├── __init__.py
-│   │   ├── build_conversation_ir.py
-│   │   ├── build_qa_ir.py
-│   │   └── build_session_ir.py
+│   │   ├── build_qa_ir.py        # ConversationIR → QAUnitIR
+│   │   └── build_session_ir.py   # QAUnitIR[] → MultiModelSessionIR
 │   │
 │   ├── extractors/               # 질문 추출기
 │   │   ├── __init__.py
 │   │   ├── base.py               # QueryExtractor ABC
-│   │   ├── heuristic.py          # 규칙 기반 추출
-│   │   └── llm.py                # LLM 기반 추출
+│   │   └── heuristic.py          # 규칙 기반 질문 추출
 │   │
 │   ├── matchers/                 # 질문 매칭기
 │   │   ├── __init__.py
 │   │   ├── base.py               # QueryMatcher ABC
-│   │   ├── hash.py               # query_hash 기반 매칭
-│   │   └── llm.py                # LLM 기반 매칭
+│   │   └── hash.py               # Hash 기반 질문 매칭
 │   │
 │   └── util/
 │       ├── __init__.py
-│       ├── text_normalization.py
-│       └── hashing.py
+│       ├── text_normalization.py # 텍스트 정규화
+│       └── hashing.py            # Query hash 생성
 │
 ├── tests/
 │   ├── conftest.py
 │   ├── models/
-│   │   └── test_conversation.py
+│   │   ├── test_conversation.py
+│   │   ├── test_qa_unit.py
+│   │   └── test_session.py
 │   ├── util/
 │   │   ├── test_text_normalization.py
 │   │   └── test_hashing.py
@@ -271,13 +275,24 @@ chatweave/
 │   │   └── test_ir_writer.py
 │   ├── parsers/
 │   │   └── test_unified.py
-│   └── (test_pipeline.py, test_matchers.py - v0.2+)
+│   ├── pipeline/
+│   │   ├── test_build_qa_ir.py
+│   │   └── test_build_session_ir.py
+│   ├── extractors/
+│   │   └── test_heuristic.py
+│   └── matchers/
+│       └── test_hash.py
+│
+├── ir/                           # 생성된 IR 출력
+│   ├── conversation-ir/
+│   ├── qa-unit-ir/
+│   └── session-ir/
 │
 └── examples/
     └── sample-session/
-        ├── chatgpt.jsonl
-        ├── claude.jsonl
-        └── gemini.jsonl
+        ├── chatgpt_20251129T114242.jsonl
+        ├── claude_20251129T114247.jsonl
+        └── gemini_20251129T114250.jsonl
 ```
 
 ## Scope
