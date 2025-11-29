@@ -35,3 +35,18 @@ def temp_output_dir(tmp_path):
     output_dir = tmp_path / "ir"
     output_dir.mkdir()
     return output_dir
+
+
+@pytest.fixture
+def sample_conversation_ir(chatgpt_jsonl):
+    """Parse ChatGPT JSONL into ConversationIR."""
+    from chatweave.parsers.unified import UnifiedParser
+    parser = UnifiedParser()
+    return parser.parse(chatgpt_jsonl)
+
+
+@pytest.fixture
+def sample_qa_unit_ir(sample_conversation_ir):
+    """Build QAUnitIR from sample ConversationIR."""
+    from chatweave.pipeline.build_qa_ir import build_qa_ir
+    return build_qa_ir(sample_conversation_ir)

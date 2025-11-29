@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from chatweave.io.ir_writer import write_conversation_ir
+from chatweave.io.ir_writer import write_conversation_ir, write_qa_unit_ir
 from chatweave.models.conversation import ConversationIR, MessageIR
+from chatweave.models.qa_unit import QAUnit, QAUnitIR
 
 
 class TestWriteConversationIR:
@@ -248,3 +249,101 @@ class TestWriteConversationIR:
         with open(output_path2, "r", encoding="utf-8") as f:
             data2 = json.load(f)
         assert len(data2["messages"]) == 1
+
+
+class TestWriteQAUnitIR:
+    """Tests for write_qa_unit_ir function."""
+
+    def test_write_basic_qa_ir(self, tmp_path):
+        """Test writing a basic QAUnitIR to JSON file."""
+        qa_unit_ir = QAUnitIR(
+            platform="chatgpt",
+            conversation_id="test-123",
+            qa_units=[
+                QAUnit(
+                    qa_id="q0000",
+                    platform="chatgpt",
+                    conversation_id="test-123",
+                    user_message_ids=["m0000"],
+                    assistant_message_ids=["m0001"],
+                    question_from_user="Question 1",
+                    question_from_assistant_summary="Summary 1",
+                    user_query_hash="hash1"
+                )
+            ]
+        )
+
+        output_path = write_qa_unit_ir(qa_unit_ir, tmp_path)
+
+        assert output_path.exists()
+        assert output_path.parent == tmp_path
+        assert output_path.name == "chatgpt_test-123.json"
+
+        with open(output_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["schema"] == "qa-unit-ir/v1"
+        assert data["platform"] == "chatgpt"
+        assert data["conversation_id"] == "test-123"
+        assert len(data["qa_units"]) == 1
+        assert data["qa_units"][0]["qa_id"] == "q0000"
+        assert data["qa_units"][0]["question_from_user"] == "Question 1"
+
+    def test_qa_ir_directory_creation(self, tmp_path):
+        """Test that output directory is created if it doesn't exist."""
+        nested_dir = tmp_path / "nested" / "qa-unit-ir"
+
+        qa_unit_ir = QAUnitIR(
+            platform="claude",
+            conversation_id="abc",
+            qa_units=[]
+        )
+
+        output_path = write_qa_unit_ir(qa_unit_ir, nested_dir)
+
+        assert output_path.exists()
+        assert output_path.parent == nested_dir
+
+    def test_qa_ir_filename_format(self, tmp_path):
+        """Test filename format for different platforms and IDs."""
+        test_cases = [
+            ("chatgpt", "692ad5eb-bb18-8320-bd15-9ae4442dcb26"),
+            ("claude", "43917b24-af4b-48b2-9507-19841ca73e37"),
+            ("gemini", "60e8895807bb7c29"),
+        ]
+
+        for platform, conv_id in test_cases:
+            qa_unit_ir = QAUnitIR(
+                platform=platform,
+                conversation_id=conv_id,
+                qa_units=[]
+            )
+            output_path = write_qa_unit_ir(qa_unit_ir, tmp_path)
+            expected_filename = f"{platform}_{conv_id}.json"
+            assert output_path.name == expected_filename
+
+    def test_qa_ir_utf8_encoding(self, tmp_path):
+        """Test that UTF-8 content is properly encoded."""
+        qa_unit_ir = QAUnitIR(
+            platform="chatgpt",
+            conversation_id="korean-test",
+            qa_units=[
+                QAUnit(
+                    qa_id="q0000",
+                    platform="chatgpt",
+                    conversation_id="korean-test",
+                    user_message_ids=["m0000"],
+                    assistant_message_ids=["m0001"],
+                    question_from_user="안녕하세요 👋",
+                    question_from_assistant_summary="한국어 질문 정리"
+                )
+            ]
+        )
+
+        output_path = write_qa_unit_ir(qa_unit_ir, tmp_path)
+
+        with open(output_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["qa_units"][0]["question_from_user"] == "안녕하세요 👋"
+        assert data["qa_units"][0]["question_from_assistant_summary"] == "한국어 질문 정리"
