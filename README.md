@@ -4,13 +4,16 @@ Multi-platform LLM conversation alignment and comparison toolkit.
 
 여러 LLM 플랫폼(ChatGPT, Claude, Gemini)에서 export한 대화 로그(JSONL)를 입력으로 받아, 플랫폼 독립적인 **중간 표현(Intermediate Representation, IR)**을 생성하는 Python 도구입니다.
 
-## Features
+**현재 버전**: v0.1.0 (ConversationIR 구현 완료)
 
-- **JSONL 파싱**: ChatGPT, Claude, Gemini의 export 파일 지원
-- **3층 IR 구조**: ConversationIR → QAUnitIR → MultiModelSessionIR
-- **세션 자동 그룹핑**: 동일 디렉토리 내 파일들을 하나의 세션으로 처리
-- **질문 매칭**: query_hash 및 LLM 기반 의미적 매칭 지원
-- **DB 불필요**: JSON 파일 기반 저장
+## Features (v0.1)
+
+- ✅ **JSONL 파싱**: ChatGPT, Claude, Gemini의 export 파일 지원
+- ✅ **ConversationIR**: 플랫폼별 대화를 정규화된 IR로 변환
+- ✅ **Query Hash**: 동일 질문 탐지를 위한 해시 생성
+- ✅ **DB 불필요**: JSON 파일 기반 저장
+- 🚧 **QAUnitIR**: Q&A 단위 추출 (v0.2 예정)
+- 🚧 **MultiModelSessionIR**: 크로스 플랫폼 정렬 (v0.3 예정)
 
 ## Architecture
 
@@ -22,8 +25,8 @@ Multi-platform LLM conversation alignment and comparison toolkit.
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    Platform Parsers                                  │
-│  ChatGPTParser, ClaudeParser, GeminiParser                          │
+│                    UnifiedParser                                     │
+│  (모든 플랫폼 동일 JSONL 스키마 사용)                                  │
 └─────────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
@@ -68,45 +71,39 @@ cd chat-weave
 pip install -e ".[dev]"
 ```
 
-## Usage
-
-### CLI
-
-```bash
-# 세션 디렉토리에서 IR 생성
-chatweave build-ir ./sessions/2025-11-29-topic/
-
-# 특정 출력 디렉토리 지정
-chatweave build-ir ./sessions/2025-11-29-topic/ --output ./ir/
-
-# dry-run (IR 생성 없이 파싱 결과만 확인)
-chatweave build-ir ./sessions/2025-11-29-topic/ --dry-run
-```
+## Usage (v0.1)
 
 ### Python API
 
 ```python
-from chatweave import SessionProcessor
-from chatweave.pipeline import (
-    build_conversation_ir,
-    build_qa_ir,
-    build_session_ir,
-)
+from pathlib import Path
+from chatweave.parsers.unified import UnifiedParser
+from chatweave.io.ir_writer import write_conversation_ir
 
-# 전체 파이프라인 실행
-processor = SessionProcessor()
-session_ir = processor.process("./sessions/2025-11-29-topic/")
+# JSONL 파일 파싱
+parser = UnifiedParser()
+conversation_ir = parser.parse(Path("examples/sample-session/chatgpt_20251129T114242.jsonl"))
 
-# 또는 단계별 실행
-conversations = build_conversation_ir("./sessions/2025-11-29-topic/")
-qa_units = build_qa_ir(conversations)
-session = build_session_ir(qa_units, session_id="2025-11-29-topic")
+# IR JSON 파일로 저장
+output_dir = Path("ir/conversation-ir")
+output_path = write_conversation_ir(conversation_ir, output_dir)
+print(f"Generated: {output_path}")
 
-# IR 접근
-for prompt_group in session.prompts:
-    print(f"질문: {prompt_group.canonical_prompt['text']}")
-    for ref in prompt_group.per_platform:
-        print(f"  {ref.platform}: {ref.qa_id}")
+# IR 데이터 접근
+print(f"Platform: {conversation_ir.platform}")
+print(f"Messages: {len(conversation_ir.messages)}")
+
+for msg in conversation_ir.messages:
+    if msg.role == "user":
+        print(f"User: {msg.raw_content[:50]}...")
+        print(f"Hash: {msg.query_hash}")
+```
+
+### CLI (v0.2 예정)
+
+```bash
+# 세션 디렉토리에서 IR 생성 (구현 예정)
+chatweave build-ir ./sessions/2025-11-29-topic/
 ```
 
 ## IR Schema

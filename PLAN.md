@@ -289,9 +289,12 @@ class EmbeddingQueryMatcher(QueryMatcher):
 
 ## Part 2: 구현 로드맵
 
-### v0.1: Core Foundation
+### v0.1: Core Foundation ✅ **완료**
 
 **목표**: 기본 파싱 및 ConversationIR 생성
+
+**완료일**: 2025-11-30
+**테스트**: 8/8 passed, 92% coverage
 
 **구현 항목**:
 1. `chatweave/models/conversation.py`
@@ -299,10 +302,11 @@ class EmbeddingQueryMatcher(QueryMatcher):
    - JSON serialization/deserialization
 
 2. `chatweave/parsers/`
-   - `base.py`: ConversationParser ABC
-   - `chatgpt.py`: ChatGPT JSONL 파서
-   - `claude.py`: Claude JSONL 파서
-   - `gemini.py`: Gemini JSONL 파서
+   - `base.py`: ConversationParser ABC ✅
+   - `unified.py`: 통합 JSONL 파서 (모든 플랫폼 지원) ✅
+
+   **설계 변경**: 샘플 데이터 분석 결과, 모든 플랫폼이 동일한 JSONL 스키마를 사용함을 확인.
+   개별 파서 대신 UnifiedParser로 통합 구현.
 
 3. `chatweave/io/`
    - `jsonl_loader.py`: JSONL 파일 읽기
@@ -316,12 +320,16 @@ class EmbeddingQueryMatcher(QueryMatcher):
    - 샘플 JSONL fixtures
    - 파서 단위 테스트
 
-**산출물**:
+**산출물**: ✅
 - `ir/conversation-ir/` 디렉토리에 플랫폼별 JSON 생성
+- 샘플 세션 3개 플랫폼 파싱 및 IR 생성 완료
+  - `chatgpt_chatgpt-692ad5eb-bb18-8320-bd15-9ae4442dcb26.json`
+  - `claude_claude-43917b24-af4b-48b2-9507-19841ca73e37.json`
+  - `gemini_gemini-60e8895807bb7c29.json`
 
 ---
 
-### v0.2: QA Extraction
+### v0.2: QA Extraction 🚧 **다음 단계**
 
 **목표**: QAUnitIR 생성 및 질문 추출
 
