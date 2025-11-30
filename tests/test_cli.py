@@ -284,3 +284,96 @@ class TestBuildIRCommand:
         # Verify output file was still created
         session_ir_file = output_dir / "session-ir" / "sample-session.json"
         assert session_ir_file.exists()
+
+    def test_build_ir_step_conversation(self, sample_session_dir, tmp_path, monkeypatch):
+        """Test --step conversation creates only ConversationIR files."""
+        output_dir = tmp_path / "ir"
+
+        # Mock sys.argv
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["chatweave", "build-ir", str(sample_session_dir), "--output", str(output_dir), "--step", "conversation"]
+        )
+
+        # Run CLI
+        main()
+
+        # Verify ConversationIR files were created
+        conversation_ir_dir = output_dir / "conversation-ir"
+        assert conversation_ir_dir.exists()
+
+        # Should have ConversationIR files
+        conversation_files = list(conversation_ir_dir.glob("*.json"))
+        assert len(conversation_files) > 0
+
+        # Should NOT have QAUnitIR or SessionIR
+        qa_ir_dir = output_dir / "qa-unit-ir"
+        session_ir_dir = output_dir / "session-ir"
+        assert not qa_ir_dir.exists()
+        assert not session_ir_dir.exists()
+
+    def test_build_ir_step_qa(self, sample_session_dir, tmp_path, monkeypatch):
+        """Test --step qa creates ConversationIR and QAUnitIR files."""
+        output_dir = tmp_path / "ir"
+
+        # Mock sys.argv
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["chatweave", "build-ir", str(sample_session_dir), "--output", str(output_dir), "--step", "qa"]
+        )
+
+        # Run CLI
+        main()
+
+        # Verify QAUnitIR files were created
+        qa_ir_dir = output_dir / "qa-unit-ir"
+        assert qa_ir_dir.exists()
+
+        # Should have QAUnitIR files
+        qa_files = list(qa_ir_dir.glob("*.json"))
+        assert len(qa_files) > 0
+
+        # Should NOT have SessionIR
+        session_ir_dir = output_dir / "session-ir"
+        assert not session_ir_dir.exists()
+
+    def test_build_ir_step_session(self, sample_session_dir, tmp_path, monkeypatch):
+        """Test --step session creates all IR files (default behavior)."""
+        output_dir = tmp_path / "ir"
+
+        # Mock sys.argv
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["chatweave", "build-ir", str(sample_session_dir), "--output", str(output_dir), "--step", "session"]
+        )
+
+        # Run CLI
+        main()
+
+        # Verify SessionIR file was created
+        session_ir_dir = output_dir / "session-ir"
+        assert session_ir_dir.exists()
+
+        session_ir_file = session_ir_dir / "sample-session.json"
+        assert session_ir_file.exists()
+
+    def test_build_ir_default_step_is_session(self, sample_session_dir, tmp_path, monkeypatch):
+        """Test that default behavior (no --step) is same as --step session."""
+        output_dir = tmp_path / "ir"
+
+        # Mock sys.argv (no --step option)
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["chatweave", "build-ir", str(sample_session_dir), "--output", str(output_dir)]
+        )
+
+        # Run CLI
+        main()
+
+        # Verify SessionIR file was created (default behavior)
+        session_ir_file = output_dir / "session-ir" / "sample-session.json"
+        assert session_ir_file.exists()

@@ -6,7 +6,11 @@ import sys
 from pathlib import Path
 from typing import List
 
-from chatweave.io.ir_writer import write_session_ir
+from chatweave.io.ir_writer import (
+    write_conversation_ir,
+    write_qa_unit_ir,
+    write_session_ir,
+)
 from chatweave.models.conversation import Platform
 from chatweave.parsers.unified import UnifiedParser
 from chatweave.pipeline.build_qa_ir import build_qa_ir
@@ -97,6 +101,7 @@ def build_ir_command(args):
 
         parser = UnifiedParser()
         qa_units = {}
+        conversation_irs = []
 
         for jsonl_path in jsonl_files:
             logger.info(f"Parsing {jsonl_path.name}...")
@@ -113,6 +118,12 @@ def build_ir_command(args):
 
             conversation_ir = parser.parse(jsonl_path, platform_override)
             qa_ir = build_qa_ir(conversation_ir)
+
+            # Store ConversationIR in list (to handle multiple files from same platform)
+            conversation_irs.append(conversation_ir)
+
+            # Store QAUnitIR by platform (SessionIR expects dict keyed by platform)
+            # If same platform appears multiple times, last one wins (for session alignment)
             qa_units[qa_ir.platform] = qa_ir
 
             logger.info(f"  Platform: {qa_ir.platform}")
@@ -123,11 +134,51 @@ def build_ir_command(args):
             "parse", details={"platforms": list(qa_units.keys())}
         )
 
+        # If step is "conversation", write ConversationIR files and exit
+        if args.step == "conversation":
+            logger.info("Step 2: Writing ConversationIR files...")
+            progress.start_step("write_output")
+
+            conversation_output_dir = output_dir / "conversation-ir"
+            written_files = []
+
+            for conversation_ir in conversation_irs:
+                output_path = write_conversation_ir(conversation_ir, conversation_output_dir)
+                written_files.append(output_path)
+                logger.info(f"  {output_path.name}")
+
+            progress.complete_step("write_output", details={"files": len(written_files)})
+            progress.complete({"conversation_ir_files": [str(f) for f in written_files]})
+
+            logger.info(f"\nConversationIR written to: {conversation_output_dir}")
+            logger.info(f"Total files: {len(written_files)}")
+            return
+
         # Step 2: Build QAUnitIR (already done above)
         progress.start_step("build_qa_ir")
         total_qa_units = sum(len(qa_ir.qa_units) for qa_ir in qa_units.values())
         logger.info(f"Step 2: Built {total_qa_units} QA unit(s) across {len(qa_units)} platform(s)")
         progress.complete_step("build_qa_ir", details={"qa_units_total": total_qa_units})
+
+        # If step is "qa", write QAUnitIR files and exit
+        if args.step == "qa":
+            logger.info("Step 3: Writing QAUnitIR files...")
+            progress.start_step("write_output")
+
+            qa_output_dir = output_dir / "qa-unit-ir"
+            written_files = []
+
+            for platform, qa_ir in qa_units.items():
+                output_path = write_qa_unit_ir(qa_ir, qa_output_dir)
+                written_files.append(output_path)
+                logger.info(f"  {output_path.name}")
+
+            progress.complete_step("write_output", details={"files": len(written_files)})
+            progress.complete({"qa_unit_ir_files": [str(f) for f in written_files]})
+
+            logger.info(f"\nQAUnitIR written to: {qa_output_dir}")
+            logger.info(f"Total files: {len(written_files)}")
+            return
 
         # Step 3: Build SessionIR
         logger.info("Step 3: Building SessionIR...")
@@ -248,6 +299,14 @@ def main():
         choices=["chatgpt", "claude", "gemini"],
         default=None,
         help="Override platform detection (single file only)",
+    )
+    build_parser.add_argument(
+        "--step",
+        "-s",
+        type=str,
+        choices=["conversation", "qa", "session"],
+        default="session",
+        help="Processing step to execute (default: session)",
     )
     build_parser.add_argument(
         "--log-file",

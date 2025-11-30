@@ -113,6 +113,11 @@ chatweave build-ir ./session/ --working-dir ./tmp/
 # 플랫폼 명시적 지정 (단일 파일만)
 chatweave build-ir ./unknown.jsonl --platform chatgpt
 
+# 처리 단계 선택
+chatweave build-ir ./session/ --step conversation  # ConversationIR만 생성
+chatweave build-ir ./session/ --step qa            # QAUnitIR까지 생성
+chatweave build-ir ./session/ --step session       # SessionIR까지 생성 (기본값)
+
 # 로그 파일 저장
 chatweave build-ir ./session/ --log-file ./chatweave.log
 
