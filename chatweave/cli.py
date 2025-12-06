@@ -296,7 +296,7 @@ def main():
         "--platform",
         "-p",
         type=str,
-        choices=["chatgpt", "claude", "gemini"],
+        choices=["chatgpt", "claude", "gemini", "grok"],
         default=None,
         help="Override platform detection (single file only)",
     )

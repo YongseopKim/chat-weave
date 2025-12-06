@@ -2,13 +2,13 @@
 
 Multi-platform LLM conversation alignment and comparison toolkit.
 
-여러 LLM 플랫폼(ChatGPT, Claude, Gemini)에서 export한 대화 로그(JSONL)를 입력으로 받아, 플랫폼 독립적인 **중간 표현(Intermediate Representation, IR)**을 생성하는 Python 도구입니다.
+여러 LLM 플랫폼(ChatGPT, Claude, Gemini, Grok)에서 export한 대화 로그(JSONL)를 입력으로 받아, 플랫폼 독립적인 **중간 표현(Intermediate Representation, IR)**을 생성하는 Python 도구입니다.
 
 **현재 버전**: v0.4.0 (CLI 확장 및 플랫폼 추론 기능 추가)
 
 ## Features
 
-- ✅ **JSONL 파싱**: ChatGPT, Claude, Gemini의 export 파일 지원
+- ✅ **JSONL 파싱**: ChatGPT, Claude, Gemini, Grok의 export 파일 지원
 - ✅ **ConversationIR**: 플랫폼별 대화를 정규화된 IR로 변환
 - ✅ **Query Hash**: 동일 질문 탐지를 위한 해시 생성
 - ✅ **QAUnitIR**: Q&A 단위 추출 및 질문 요약 자동 추출
@@ -29,7 +29,7 @@ Multi-platform LLM conversation alignment and comparison toolkit.
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                      Session Directory                               │
-│  (chatgpt.jsonl, claude.jsonl, gemini.jsonl)                        │
+│  (chatgpt.jsonl, claude.jsonl, gemini.jsonl, grok.jsonl)            │
 └─────────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
@@ -136,7 +136,7 @@ chatweave build-ir ./session/ --quiet
 CLI는 다음 우선순위로 플랫폼을 추론합니다:
 1. `--platform` 옵션 (최우선)
 2. JSONL metadata의 `platform` 필드
-3. 파일명 패턴 (`chatgpt_*.jsonl`, `claude_*.jsonl`, `gemini_*.jsonl`)
+3. 파일명 패턴 (`chatgpt_*.jsonl`, `claude_*.jsonl`, `gemini_*.jsonl`, `grok_*.jsonl`)
 
 추론 실패 시 에러 메시지를 표시합니다.
 
@@ -337,7 +337,8 @@ chatweave/
     └── sample-session/
         ├── chatgpt_20251129T114242.jsonl
         ├── claude_20251129T114247.jsonl
-        └── gemini_20251129T114250.jsonl
+        ├── gemini_20251129T114250.jsonl
+        └── grok_20251206T133524.jsonl
 ```
 
 ## Scope

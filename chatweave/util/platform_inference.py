@@ -12,6 +12,7 @@ PLATFORM_PATTERNS = {
     "chatgpt": re.compile(r"^chatgpt[_-]", re.IGNORECASE),
     "claude": re.compile(r"^claude[_-]", re.IGNORECASE),
     "gemini": re.compile(r"^gemini[_-]", re.IGNORECASE),
+    "grok": re.compile(r"^grok[_-]", re.IGNORECASE),
 }
 
 
@@ -77,7 +78,7 @@ def infer_platform(
     # Priority 2: Metadata
     if metadata and metadata.get("platform"):
         platform = metadata.get("platform")
-        if platform in ("chatgpt", "claude", "gemini"):
+        if platform in ("chatgpt", "claude", "gemini", "grok"):
             return platform  # type: ignore
 
     # Priority 3: Filename
@@ -89,6 +90,6 @@ def infer_platform(
     raise ValueError(
         f"Cannot infer platform for '{jsonl_path.name}'. "
         f"Either add 'platform' to metadata, rename file to "
-        f"'chatgpt_*.jsonl', 'claude_*.jsonl', or 'gemini_*.jsonl', "
+        f"'chatgpt_*.jsonl', 'claude_*.jsonl', 'gemini_*.jsonl', or 'grok_*.jsonl', "
         f"or use --platform option."
     )

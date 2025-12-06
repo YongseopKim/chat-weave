@@ -38,6 +38,14 @@ class TestInferPlatformFromFilename:
         """Should match gemini-* pattern."""
         assert infer_platform_from_filename("gemini-export.jsonl") == "gemini"
 
+    def test_grok_pattern_underscore(self):
+        """Should match grok_* pattern."""
+        assert infer_platform_from_filename("grok_20251206T133524.jsonl") == "grok"
+
+    def test_grok_pattern_hyphen(self):
+        """Should match grok-* pattern."""
+        assert infer_platform_from_filename("grok-export.jsonl") == "grok"
+
     def test_no_match_returns_none(self):
         """Should return None for unknown filename."""
         assert infer_platform_from_filename("unknown.jsonl") is None
@@ -126,3 +134,10 @@ class TestInferPlatform:
         metadata = {"platform": "gemini"}
         result = infer_platform(path, metadata=metadata)
         assert result == "gemini"
+
+    def test_metadata_grok(self):
+        """Should use metadata platform for grok."""
+        path = Path("unknown.jsonl")
+        metadata = {"platform": "grok"}
+        result = infer_platform(path, metadata=metadata)
+        assert result == "grok"
