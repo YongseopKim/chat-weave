@@ -9,7 +9,11 @@ from chatweave.models.conversation import ConversationIR, MessageIR, Platform
 from chatweave.parsers.base import ConversationParser
 from chatweave.util.hashing import compute_query_hash
 from chatweave.util.platform_inference import infer_platform
-from chatweave.util.text_normalization import normalize_text
+from chatweave.util.text_normalization import (
+    clean_gemini_assistant,
+    clean_grok_assistant,
+    normalize_text,
+)
 
 
 class UnifiedParser(ConversationParser):
@@ -51,7 +55,7 @@ class UnifiedParser(ConversationParser):
         # Convert messages to MessageIR
         message_irs = []
         for index, msg_data in enumerate(messages):
-            message_ir = self._convert_message(msg_data, index)
+            message_ir = self._convert_message(msg_data, index, platform)
             message_irs.append(message_ir)
 
         # Create ConversationIR
@@ -87,12 +91,15 @@ class UnifiedParser(ConversationParser):
         # Fallback: use filename without extension
         return jsonl_path.stem
 
-    def _convert_message(self, msg_data: dict, index: int) -> MessageIR:
+    def _convert_message(
+        self, msg_data: dict, index: int, platform: Platform
+    ) -> MessageIR:
         """Convert message dict to MessageIR.
 
         Args:
             msg_data: Message data dictionary
             index: Message index in conversation
+            platform: Platform identifier for platform-specific cleaning
 
         Returns:
             MessageIR object
@@ -112,8 +119,18 @@ class UnifiedParser(ConversationParser):
             # Fallback to epoch if parsing fails
             timestamp = datetime.fromtimestamp(0)
 
+        # Apply platform-specific cleaning for assistant responses
+        content_to_normalize = raw_content
+        if role == "assistant" and raw_content:
+            if platform == "gemini":
+                content_to_normalize = clean_gemini_assistant(raw_content)
+            elif platform == "grok":
+                content_to_normalize = clean_grok_assistant(raw_content)
+
         # Normalize content
-        normalized_content = normalize_text(raw_content) if raw_content else None
+        normalized_content = (
+            normalize_text(content_to_normalize) if content_to_normalize else None
+        )
 
         # Compute query hash for user messages
         query_hash = None
