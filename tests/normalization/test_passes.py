@@ -209,6 +209,19 @@ class TestListStructurePass:
         assert pass_.post_condition("- single dash", ctx) is True
         assert pass_.post_condition("- - double", ctx) is False
 
+    def test_does_not_treat_hyphenated_number_in_heading_as_numbered_item(self):
+        """5-1. in heading should not trigger numbered list sub-item indentation.
+
+        The pattern \d+\. should only match at line start, not mid-line like in '5-1.'.
+        """
+        pass_ = ListStructurePass()
+        ctx = NormalizationContext()
+        # This text contains "1." within "5-1." which should NOT be treated as numbered item
+        text = "### 5. Heading\n\n#### 5-1. 문제 정의\n\n-   블록체인은 결국"
+        result = pass_.action(text, ctx)
+        # Should preserve blank line before dash list (not indent as sub-item)
+        assert "문제 정의\n\n-" in result, f"Got: {repr(result)}"
+
 
 class TestTableStructurePass:
     """Test TableStructurePass."""

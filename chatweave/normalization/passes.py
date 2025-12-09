@@ -223,7 +223,9 @@ class ListStructurePass(NormalizationPass):
         """Indent root-level dashes as sub-items of numbered items."""
         # Check if processing is needed: numbered followed by root-level dash
         # If no root-level dash after numbered item, already processed (idempotent)
-        if not re.search(r"\d+\.[^\n]*\n\n*-", text):
+        # Pattern requires line start (^|\n) and space after number to avoid
+        # matching "5-1." as numbered item (the "1." part would incorrectly match)
+        if not re.search(r"(?:^|\n)\d+\. [^\n]*\n\n*-", text):
             return text
 
         def process_match(match: re.Match) -> str:
@@ -248,7 +250,9 @@ class ListStructurePass(NormalizationPass):
             indented = re.sub(r"\n\n+(\s*-)", r"\n\1", indented)
             return numbered_line + indented + next_part
 
-        pattern = r"((?:^|\n)\d+\.[^\n]*\n)((?:(?!\n\d+\.).)*?)(\n\d+\.|$)"
+        # Pattern requires space after \d+\. to match only real numbered items
+        # e.g., "1. item" matches but "5-1.item" does not
+        pattern = r"((?:^|\n)\d+\. [^\n]*\n)((?:(?!\n\d+\. ).)*?)(\n\d+\. |$)"
         return re.sub(pattern, process_match, text, flags=re.DOTALL)
 
     def post_condition(self, text: str, ctx: NormalizationContext) -> bool:
