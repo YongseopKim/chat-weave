@@ -1,34 +1,34 @@
 # ChatWeave
 
-Multi-platform LLM conversation alignment and comparison toolkit.
+멀티플랫폼 LLM 대화 정렬 및 비교 도구
 
-A Python tool that takes exported conversation logs (JSONL) from multiple LLM platforms (ChatGPT, Claude, Gemini, Grok) and generates platform-independent **Intermediate Representation (IR)**.
+여러 LLM 플랫폼(ChatGPT, Claude, Gemini, Grok)에서 export한 대화 로그(JSONL)를 입력으로 받아, 플랫폼 독립적인 **중간 표현(Intermediate Representation, IR)**을 생성하는 Python 도구입니다.
 
-**Current Version**: v0.4.0 (CLI extension and platform inference features)
+**현재 버전**: v0.4.0 (CLI 확장 및 플랫폼 추론 기능 추가)
 
-[Korean Documentation (한국어 문서)](./README.ko.md)
+[English Documentation](./README.md)
 
-## Features
+## 기능
 
-- **JSONL Parsing**: Support for ChatGPT, Claude, Gemini, Grok export files
-- **ConversationIR**: Convert platform-specific conversations to normalized IR
-- **Query Hash**: Generate hashes for identical question detection
-- **QAUnitIR**: Extract Q&A units and auto-extract question summaries
-- **Heuristic Extractor**: Auto-parse "question summary" sections from ChatGPT/Gemini
-- **MultiModelSessionIR**: Cross-platform alignment and question matching
-- **Hash-based Matching**: Automatic grouping of identical questions
-- **Dependency Tracking**: Track sequential question dependencies
-- **Auto Platform Inference**: metadata -> filename pattern -> explicit specification
-- **Flexible Input**: Support for single file, multiple files, or directory
-- **Progress Tracking**: Record execution steps via progress.json
-- **Logging Options**: Console/file logging, quiet mode support
-- **Extended CLI**: Various input methods and options
-- **No Database Required**: JSON file-based storage
+- **JSONL 파싱**: ChatGPT, Claude, Gemini, Grok의 export 파일 지원
+- **ConversationIR**: 플랫폼별 대화를 정규화된 IR로 변환
+- **Query Hash**: 동일 질문 탐지를 위한 해시 생성
+- **QAUnitIR**: Q&A 단위 추출 및 질문 요약 자동 추출
+- **Heuristic Extractor**: ChatGPT/Gemini의 "질문 정리" 섹션 자동 파싱
+- **MultiModelSessionIR**: 크로스 플랫폼 정렬 및 질문 매칭
+- **Hash-based Matching**: 동일 질문 자동 그룹핑
+- **Dependency Tracking**: 순차적 질문 의존성 추적
+- **플랫폼 자동 추론**: metadata -> 파일명 패턴 -> 명시적 지정
+- **유연한 입력**: 단일 파일, 여러 파일, 디렉토리 모두 지원
+- **Progress 추적**: progress.json으로 실행 단계 기록
+- **로깅 옵션**: 콘솔/파일 로깅, quiet 모드 지원
+- **CLI 확장**: 다양한 입력 방식 및 옵션 지원
+- **DB 불필요**: JSON 파일 기반 저장
 
-**Planned**:
-- LLM Integration: LLM-based question matching (v0.5)
+**예정**:
+- LLM Integration: LLM 기반 질문 매칭 (v0.5)
 
-## Architecture
+## 아키텍처
 
 ```
 +---------------------------------------------------------------------+
@@ -39,28 +39,28 @@ A Python tool that takes exported conversation logs (JSONL) from multiple LLM pl
                                  v
 +---------------------------------------------------------------------+
 |                    UnifiedParser                                     |
-|  (Same JSONL schema for all platforms)                              |
+|  (모든 플랫폼 동일 JSONL 스키마 사용)                                  |
 +---------------------------------------------------------------------+
                                  |
                                  v
 +---------------------------------------------------------------------+
-|              Layer 1: ConversationIR (per platform)                  |
+|              Layer 1: ConversationIR (플랫폼별)                       |
 |  - meta: platform, url, exported_at                                  |
 |  - messages: [id, role, timestamp, raw_content, normalized_content]  |
 +---------------------------------------------------------------------+
                                  |
                                  v
 +---------------------------------------------------------------------+
-|              Layer 2: QAUnitIR (Q&A unit extraction)                 |
+|              Layer 2: QAUnitIR (Q&A 단위 추출)                        |
 |  - qa_units: [user_message_ids, assistant_message_ids]               |
 |  - question_from_user, question_from_assistant_summary               |
 +---------------------------------------------------------------------+
                                  |
                                  v
 +---------------------------------------------------------------------+
-|              Layer 3: MultiModelSessionIR (cross-platform alignment) |
+|              Layer 3: MultiModelSessionIR (크로스 플랫폼 정렬)         |
 |  - prompts: [canonical_prompt, per_platform mappings]                |
-|  - depends_on, missing_context tracking                              |
+|  - depends_on, missing_context 추적                                  |
 +---------------------------------------------------------------------+
                                  |
                                  v
@@ -70,19 +70,19 @@ A Python tool that takes exported conversation logs (JSONL) from multiple LLM pl
 +---------------------------------------------------------------------+
 ```
 
-## Installation
+## 설치
 
 ```bash
 pip install chatweave
 ```
 
-Development mode:
+개발 모드:
 
 ```bash
 git clone https://github.com/dragon/chat-weave.git
 cd chat-weave
 
-# Create and activate virtual environment
+# 가상환경 생성 및 활성화
 python3 -m venv venv
 source venv/bin/activate  # macOS/Linux
 # venv\Scripts\activate  # Windows
@@ -90,59 +90,59 @@ source venv/bin/activate  # macOS/Linux
 pip install -e ".[dev]"
 ```
 
-## Usage
+## 사용법
 
 ### CLI
 
-**Basic usage:**
+**기본 사용:**
 ```bash
-# Directory input
+# 디렉토리 입력
 chatweave build-ir ./examples/sample-session/
 
-# Single file input
+# 단일 파일 입력
 chatweave build-ir ./chatgpt_export.jsonl
 
-# Multiple file input
+# 여러 파일 입력
 chatweave build-ir chatgpt.jsonl claude.jsonl gemini.jsonl
 ```
 
-**Options:**
+**옵션:**
 ```bash
-# Specify output directory
+# 출력 디렉토리 지정
 chatweave build-ir ./session/ --output ./ir/
 
-# Specify working directory (progress.json location)
+# 작업 디렉토리 지정 (progress.json 위치)
 chatweave build-ir ./session/ --working-dir ./tmp/
 
-# Explicitly specify platform (single file only)
+# 플랫폼 명시적 지정 (단일 파일만)
 chatweave build-ir ./unknown.jsonl --platform chatgpt
 
-# Select processing step
-chatweave build-ir ./session/ --step conversation  # Generate ConversationIR only
-chatweave build-ir ./session/ --step qa            # Generate up to QAUnitIR
-chatweave build-ir ./session/ --step session       # Generate up to SessionIR (default)
+# 처리 단계 선택
+chatweave build-ir ./session/ --step conversation  # ConversationIR만 생성
+chatweave build-ir ./session/ --step qa            # QAUnitIR까지 생성
+chatweave build-ir ./session/ --step session       # SessionIR까지 생성 (기본값)
 
-# Save log file
+# 로그 파일 저장
 chatweave build-ir ./session/ --log-file ./chatweave.log
 
-# Preview (no file writing)
+# 미리보기 (파일 작성 안 함)
 chatweave build-ir ./session/ --dry-run
 
-# Verbose output
+# 상세 출력
 chatweave build-ir ./session/ --verbose
 
-# Quiet mode (suppress stdout)
+# 조용한 모드 (stdout 억제)
 chatweave build-ir ./session/ --quiet
 ```
 
-**Platform Inference:**
+**플랫폼 추론:**
 
-The CLI infers platform in the following priority order:
-1. `--platform` option (highest priority)
-2. `platform` field in JSONL metadata
-3. Filename pattern (`chatgpt_*.jsonl`, `claude_*.jsonl`, `gemini_*.jsonl`, `grok_*.jsonl`)
+CLI는 다음 우선순위로 플랫폼을 추론합니다:
+1. `--platform` 옵션 (최우선)
+2. JSONL metadata의 `platform` 필드
+3. 파일명 패턴 (`chatgpt_*.jsonl`, `claude_*.jsonl`, `gemini_*.jsonl`, `grok_*.jsonl`)
 
-An error message is displayed if inference fails.
+추론 실패 시 에러 메시지를 표시합니다.
 
 ### Python API
 
@@ -151,16 +151,16 @@ from pathlib import Path
 from chatweave.parsers.unified import UnifiedParser
 from chatweave.io.ir_writer import write_conversation_ir
 
-# Parse JSONL file
+# JSONL 파일 파싱
 parser = UnifiedParser()
 conversation_ir = parser.parse(Path("examples/sample-session/chatgpt_20251129T114242.jsonl"))
 
-# Save IR as JSON file
+# IR JSON 파일로 저장
 output_dir = Path("ir/conversation-ir")
 output_path = write_conversation_ir(conversation_ir, output_dir)
 print(f"Generated: {output_path}")
 
-# Access IR data
+# IR 데이터 접근
 print(f"Platform: {conversation_ir.platform}")
 print(f"Messages: {len(conversation_ir.messages)}")
 
@@ -170,11 +170,11 @@ for msg in conversation_ir.messages:
         print(f"Hash: {msg.query_hash}")
 ```
 
-## IR Schema
+## IR 스키마
 
 ### Layer 1: ConversationIR
 
-1 platform JSONL file -> 1 ConversationIR
+플랫폼별 JSONL 파일 1개 -> ConversationIR 1개
 
 ```json
 {
@@ -191,8 +191,8 @@ for msg in conversation_ir.messages:
       "index": 0,
       "role": "user",
       "timestamp": "2025-11-29T10:00:05Z",
-      "raw_content": "Explain RWA tokenization",
-      "normalized_content": "Explain RWA tokenization",
+      "raw_content": "RWA 토큰화에 대해 설명해줘",
+      "normalized_content": "RWA 토큰화에 대해 설명해줘",
       "query_hash": "a1b2c3d4..."
     }
   ]
@@ -201,7 +201,7 @@ for msg in conversation_ir.messages:
 
 ### Layer 2: QAUnitIR
 
-Extract question-answer units from ConversationIR
+ConversationIR에서 질문-답변 단위를 추출
 
 ```json
 {
@@ -213,8 +213,8 @@ Extract question-answer units from ConversationIR
       "qa_id": "q0001",
       "user_message_ids": ["m0001"],
       "assistant_message_ids": ["m0002"],
-      "question_from_user": "Explain RWA tokenization",
-      "question_from_assistant_summary": "Question about the definition and mechanism of RWA (Real World Asset) tokenization",
+      "question_from_user": "RWA 토큰화에 대해 설명해줘",
+      "question_from_assistant_summary": "RWA(Real World Asset) 토큰화의 정의와 작동 방식에 대한 질문",
       "user_query_hash": "a1b2c3d4..."
     }
   ]
@@ -223,7 +223,7 @@ Extract question-answer units from ConversationIR
 
 ### Layer 3: MultiModelSessionIR
 
-Align QAUnits from all platforms in a directory by "same question" criteria
+디렉토리 내 모든 플랫폼의 QAUnit을 "같은 질문" 기준으로 정렬
 
 ```json
 {
@@ -234,8 +234,8 @@ Align QAUnits from all platforms in a directory by "same question" criteria
     {
       "prompt_key": "p0001",
       "canonical_prompt": {
-        "text": "What is RWA tokenization?",
-        "language": "en",
+        "text": "RWA 토큰화란 무엇인가?",
+        "language": "ko",
         "source": { "platform": "chatgpt", "qa_id": "q0001" }
       },
       "depends_on": [],
@@ -258,7 +258,7 @@ Align QAUnits from all platforms in a directory by "same question" criteria
 }
 ```
 
-## Project Structure
+## 프로젝트 구조
 
 ```
 chatweave/
@@ -267,46 +267,46 @@ chatweave/
 │
 ├── chatweave/
 │   ├── __init__.py
-│   ├── cli.py                    # CLI entry point
+│   ├── cli.py                    # CLI 진입점
 │   │
-│   ├── models/                   # IR dataclass definitions
+│   ├── models/                   # IR dataclass 정의
 │   │   ├── __init__.py
 │   │   ├── conversation.py       # ConversationIR, MessageIR
 │   │   ├── qa_unit.py            # QAUnitIR, QAUnit
 │   │   └── session.py            # MultiModelSessionIR, PromptGroup
 │   │
-│   ├── io/                       # File I/O
+│   ├── io/                       # 파일 I/O
 │   │   ├── __init__.py
-│   │   ├── jsonl_loader.py       # JSONL file reading
-│   │   └── ir_writer.py          # IR -> JSON saving
+│   │   ├── jsonl_loader.py       # JSONL 파일 읽기
+│   │   └── ir_writer.py          # IR -> JSON 저장
 │   │
-│   ├── parsers/                  # Platform parsers
+│   ├── parsers/                  # 플랫폼 파서
 │   │   ├── __init__.py
 │   │   ├── base.py               # ConversationParser ABC
-│   │   └── unified.py            # UnifiedParser (all platforms)
+│   │   └── unified.py            # UnifiedParser (모든 플랫폼 지원)
 │   │
-│   ├── pipeline/                 # IR generation pipeline
+│   ├── pipeline/                 # IR 생성 파이프라인
 │   │   ├── __init__.py
 │   │   ├── build_qa_ir.py        # ConversationIR -> QAUnitIR
 │   │   └── build_session_ir.py   # QAUnitIR[] -> MultiModelSessionIR
 │   │
-│   ├── extractors/               # Question extractors
+│   ├── extractors/               # 질문 추출기
 │   │   ├── __init__.py
 │   │   ├── base.py               # QueryExtractor ABC
-│   │   └── heuristic.py          # Rule-based question extraction
+│   │   └── heuristic.py          # 규칙 기반 질문 추출
 │   │
-│   ├── matchers/                 # Question matchers
+│   ├── matchers/                 # 질문 매칭기
 │   │   ├── __init__.py
 │   │   ├── base.py               # QueryMatcher ABC
-│   │   └── hash.py               # Hash-based question matching
+│   │   └── hash.py               # Hash 기반 질문 매칭
 │   │
 │   └── util/
 │       ├── __init__.py
-│       ├── text_normalization.py # Text normalization
-│       ├── hashing.py            # Query hash generation
-│       ├── platform_inference.py # Auto platform inference
-│       ├── logging_config.py     # Logging configuration
-│       └── progress.py           # Progress tracking
+│       ├── text_normalization.py # 텍스트 정규화
+│       ├── hashing.py            # Query hash 생성
+│       ├── platform_inference.py # 플랫폼 자동 추론
+│       ├── logging_config.py     # 로깅 설정
+│       └── progress.py           # Progress 추적
 │
 ├── tests/
 │   ├── conftest.py
@@ -332,7 +332,7 @@ chatweave/
 │   └── matchers/
 │       └── test_hash.py
 │
-├── ir/                           # Generated IR output
+├── ir/                           # 생성된 IR 출력
 │   ├── conversation-ir/
 │   ├── qa-unit-ir/
 │   └── session-ir/
@@ -345,20 +345,20 @@ chatweave/
         └── grok_20251206T133524.jsonl
 ```
 
-## Scope
+## 범위
 
-### What It Does
+### 하는 것
 
-- JSONL parsing -> normalization -> IR (JSON) generation
-- Q&A unit extraction within platforms
-- Multi-platform Q&A mapping/alignment at directory level
+- JSONL 파싱 -> 정규화 -> IR(JSON) 생성
+- 플랫폼 내 QA 단위 추출
+- 디렉토리 단위 멀티 플랫폼 QA 매핑/정렬
 
-### What It Does NOT Do
+### 하지 않는 것
 
-- Markdown / HTML / PDF rendering
-- Auto-summarization via direct LLM API calls (implemented in separate project on top of IR)
-- Database storage
+- Markdown / HTML / PDF 렌더링
+- LLM API 직접 호출로 자동 요약 (IR 위에 별도 프로젝트에서 구현)
+- 데이터베이스 저장
 
-## License
+## 라이선스
 
 MIT
