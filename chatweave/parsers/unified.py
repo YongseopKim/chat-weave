@@ -81,12 +81,14 @@ class UnifiedParser(ConversationParser):
         # Try to extract from URL if available
         url = metadata.get("url", "")
         if url:
+            # Remove query string from URL
+            url_without_query = url.split("?")[0]
             # Extract conversation ID from URL
             # e.g., https://chatgpt.com/c/692ad5eb-... -> 692ad5eb-...
             # e.g., https://claude.ai/chat/43917b24-... -> 43917b24-...
-            parts = url.rstrip("/").split("/")
+            parts = url_without_query.rstrip("/").split("/")
             if len(parts) >= 2:
-                return f"{metadata['platform']}-{parts[-1]}"
+                return parts[-1]
 
         # Fallback: use filename without extension
         return jsonl_path.stem

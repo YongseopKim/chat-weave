@@ -26,7 +26,7 @@ class TestBuildIRCommand:
         main()
 
         # Verify output file was created
-        session_ir_file = output_dir / "session-ir" / "sample-session.json"
+        session_ir_file = output_dir / "session-ir" / "mms_sample-session.json"
         assert session_ir_file.exists()
         assert session_ir_file.stat().st_size > 0
 
@@ -91,7 +91,7 @@ class TestBuildIRCommand:
         main()
 
         # Verify output file was created in custom location
-        session_ir_file = custom_output / "session-ir" / "sample-session.json"
+        session_ir_file = custom_output / "session-ir" / "mms_sample-session.json"
         assert session_ir_file.exists()
 
     def test_build_ir_nonexistent_directory(self, tmp_path, monkeypatch, capsys):
@@ -168,7 +168,7 @@ class TestBuildIRCommand:
         main()
 
         # Verify output file was created
-        session_ir_file = output_dir / "session-ir" / "multi-file-session.json"
+        session_ir_file = output_dir / "session-ir" / "mms_multi-file-session.json"
         assert session_ir_file.exists()
 
     def test_build_ir_multiple_files_input(self, sample_session_dir, tmp_path, monkeypatch):
@@ -188,7 +188,7 @@ class TestBuildIRCommand:
         main()
 
         # Verify output file was created
-        session_ir_file = output_dir / "session-ir" / "multi-file-session.json"
+        session_ir_file = output_dir / "session-ir" / "mms_multi-file-session.json"
         assert session_ir_file.exists()
 
     def test_build_ir_platform_override(self, tmp_path, monkeypatch):
@@ -213,7 +213,7 @@ class TestBuildIRCommand:
         main()
 
         # Verify output file was created
-        session_ir_file = output_dir / "session-ir" / "multi-file-session.json"
+        session_ir_file = output_dir / "session-ir" / "mms_multi-file-session.json"
         assert session_ir_file.exists()
 
     def test_build_ir_working_dir_option(self, sample_session_dir, tmp_path, monkeypatch):
@@ -236,7 +236,7 @@ class TestBuildIRCommand:
         assert progress_file.exists()
 
         # Verify output file was created in output_dir
-        session_ir_file = output_dir / "session-ir" / "sample-session.json"
+        session_ir_file = output_dir / "session-ir" / "mms_sample-session.json"
         assert session_ir_file.exists()
 
     def test_build_ir_log_file_option(self, sample_session_dir, tmp_path, monkeypatch):
@@ -282,7 +282,7 @@ class TestBuildIRCommand:
         assert captured.out == ""
 
         # Verify output file was still created
-        session_ir_file = output_dir / "session-ir" / "sample-session.json"
+        session_ir_file = output_dir / "session-ir" / "mms_sample-session.json"
         assert session_ir_file.exists()
 
     def test_build_ir_step_conversation(self, sample_session_dir, tmp_path, monkeypatch):
@@ -357,7 +357,7 @@ class TestBuildIRCommand:
         session_ir_dir = output_dir / "session-ir"
         assert session_ir_dir.exists()
 
-        session_ir_file = session_ir_dir / "sample-session.json"
+        session_ir_file = session_ir_dir / "mms_sample-session.json"
         assert session_ir_file.exists()
 
     def test_build_ir_default_step_is_session(self, sample_session_dir, tmp_path, monkeypatch):
@@ -375,5 +375,5 @@ class TestBuildIRCommand:
         main()
 
         # Verify SessionIR file was created (default behavior)
-        session_ir_file = output_dir / "session-ir" / "sample-session.json"
+        session_ir_file = output_dir / "session-ir" / "mms_sample-session.json"
         assert session_ir_file.exists()

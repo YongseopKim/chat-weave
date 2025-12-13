@@ -51,7 +51,7 @@ class TestWriteConversationIR:
         assert output_path.parent == tmp_path
 
         # Verify filename format
-        assert output_path.name == "chatgpt_test-123.json"
+        assert output_path.name == "chatgpt_conv_test-123.json"
 
         # Verify file contents
         with open(output_path, "r", encoding="utf-8") as f:
@@ -83,9 +83,9 @@ class TestWriteConversationIR:
     def test_filename_format(self, tmp_path):
         """Test filename format for different platforms and IDs."""
         test_cases = [
-            ("chatgpt", "692ad5eb-bb18-8320-bd15-9ae4442dcb26", "chatgpt_692ad5eb-bb18-8320-bd15-9ae4442dcb26.json"),
-            ("claude", "43917b24-af4b-48b2-9507-19841ca73e37", "claude_43917b24-af4b-48b2-9507-19841ca73e37.json"),
-            ("gemini", "60e8895807bb7c29", "gemini_60e8895807bb7c29.json"),
+            ("chatgpt", "692ad5eb-bb18-8320-bd15-9ae4442dcb26", "chatgpt_conv_692ad5eb-bb18-8320-bd15-9ae4442dcb26.json"),
+            ("claude", "43917b24-af4b-48b2-9507-19841ca73e37", "claude_conv_43917b24-af4b-48b2-9507-19841ca73e37.json"),
+            ("gemini", "60e8895807bb7c29", "gemini_conv_60e8895807bb7c29.json"),
         ]
 
         for platform, conv_id, expected_filename in test_cases:
@@ -223,8 +223,8 @@ class TestWriteConversationIR:
         assert data["messages"][1]["role"] == "assistant"
         assert data["messages"][2]["role"] == "user"
 
-    def test_overwrite_existing_file(self, tmp_path):
-        """Test that existing file is overwritten."""
+    def test_duplicate_filename_adds_suffix(self, tmp_path):
+        """Test that duplicate filenames get numeric suffix."""
         conversation_ir = ConversationIR(
             platform="chatgpt",
             conversation_id="same-id",
@@ -234,30 +234,23 @@ class TestWriteConversationIR:
 
         # Write first time
         output_path1 = write_conversation_ir(conversation_ir, tmp_path)
-        with open(output_path1, "r", encoding="utf-8") as f:
-            data1 = json.load(f)
-        assert len(data1["messages"]) == 0
+        assert output_path1.name == "chatgpt_conv_same-id.json"
 
-        # Update and write again
-        conversation_ir.messages.append(
-            MessageIR(
-                id="m0000",
-                index=0,
-                role="user",
-                timestamp=datetime(2025, 11, 29, 10, 0, 0),
-                raw_content="New message",
-                normalized_content="New message"
-            )
-        )
+        # Write again - should get _1 suffix
         output_path2 = write_conversation_ir(conversation_ir, tmp_path)
+        assert output_path2.name == "chatgpt_conv_same-id_1.json"
 
-        # Should be same path
-        assert output_path1 == output_path2
+        # Write third time - should get _2 suffix
+        output_path3 = write_conversation_ir(conversation_ir, tmp_path)
+        assert output_path3.name == "chatgpt_conv_same-id_2.json"
 
-        # Content should be updated
-        with open(output_path2, "r", encoding="utf-8") as f:
-            data2 = json.load(f)
-        assert len(data2["messages"]) == 1
+        # All files should exist
+        assert output_path1.exists()
+        assert output_path2.exists()
+        assert output_path3.exists()
+
+        # All paths should be different
+        assert output_path1 != output_path2 != output_path3
 
 
 class TestWriteQAUnitIR:
@@ -286,7 +279,7 @@ class TestWriteQAUnitIR:
 
         assert output_path.exists()
         assert output_path.parent == tmp_path
-        assert output_path.name == "chatgpt_test-123.json"
+        assert output_path.name == "chatgpt_qau_test-123.json"
 
         with open(output_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -328,7 +321,7 @@ class TestWriteQAUnitIR:
                 qa_units=[]
             )
             output_path = write_qa_unit_ir(qa_unit_ir, tmp_path)
-            expected_filename = f"{platform}_{conv_id}.json"
+            expected_filename = f"{platform}_qau_{conv_id}.json"
             assert output_path.name == expected_filename
 
     def test_qa_ir_utf8_encoding(self, tmp_path):
@@ -356,6 +349,31 @@ class TestWriteQAUnitIR:
 
         assert data["qa_units"][0]["question_from_user"] == "안녕하세요 👋"
         assert data["qa_units"][0]["question_from_assistant_summary"] == "한국어 질문 정리"
+
+    def test_duplicate_filename_adds_suffix(self, tmp_path):
+        """Test that duplicate filenames get numeric suffix."""
+        qa_unit_ir = QAUnitIR(
+            platform="chatgpt",
+            conversation_id="same-id",
+            qa_units=[]
+        )
+
+        # Write first time
+        output_path1 = write_qa_unit_ir(qa_unit_ir, tmp_path)
+        assert output_path1.name == "chatgpt_qau_same-id.json"
+
+        # Write again - should get _1 suffix
+        output_path2 = write_qa_unit_ir(qa_unit_ir, tmp_path)
+        assert output_path2.name == "chatgpt_qau_same-id_1.json"
+
+        # Write third time - should get _2 suffix
+        output_path3 = write_qa_unit_ir(qa_unit_ir, tmp_path)
+        assert output_path3.name == "chatgpt_qau_same-id_2.json"
+
+        # All files should exist
+        assert output_path1.exists()
+        assert output_path2.exists()
+        assert output_path3.exists()
 
 
 class TestWriteSessionIR:
@@ -393,7 +411,7 @@ class TestWriteSessionIR:
 
         assert output_path.exists()
         assert output_path.parent == tmp_path
-        assert output_path.name == "test-session.json"
+        assert output_path.name == "mms_test-session.json"
 
         with open(output_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -437,7 +455,7 @@ class TestWriteSessionIR:
                 prompts=[],
             )
             output_path = write_session_ir(session_ir, tmp_path)
-            expected_filename = f"{session_id}.json"
+            expected_filename = f"mms_{session_id}.json"
             assert output_path.name == expected_filename
 
     def test_session_ir_utf8_encoding(self, tmp_path):
@@ -517,3 +535,29 @@ class TestWriteSessionIR:
         assert len(data["platforms"]) == 3
         assert len(data["conversations"]) == 3
         assert len(data["prompts"][0]["per_platform"]) == 3
+
+    def test_duplicate_filename_adds_suffix(self, tmp_path):
+        """Test that duplicate filenames get numeric suffix."""
+        session_ir = MultiModelSessionIR(
+            session_id="same-session",
+            platforms=[],
+            conversations=[],
+            prompts=[],
+        )
+
+        # Write first time
+        output_path1 = write_session_ir(session_ir, tmp_path)
+        assert output_path1.name == "mms_same-session.json"
+
+        # Write again - should get _1 suffix
+        output_path2 = write_session_ir(session_ir, tmp_path)
+        assert output_path2.name == "mms_same-session_1.json"
+
+        # Write third time - should get _2 suffix
+        output_path3 = write_session_ir(session_ir, tmp_path)
+        assert output_path3.name == "mms_same-session_2.json"
+
+        # All files should exist
+        assert output_path1.exists()
+        assert output_path2.exists()
+        assert output_path3.exists()

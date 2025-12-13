@@ -81,7 +81,7 @@ class TestUnifiedParser:
         output_path = write_conversation_ir(conversation_ir, temp_output_dir)
 
         assert output_path.exists()
-        assert output_path.name.startswith("chatgpt_")
+        assert output_path.name.startswith("chatgpt_conv_")
         assert output_path.suffix == ".json"
 
         # Read back and verify
