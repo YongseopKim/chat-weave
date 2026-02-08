@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 
-from chatweave.models.conversation import ConversationIR, MessageIR
+from chatweave.models.conversation import ArtifactIR, ConversationIR, MessageIR
 
 
 class TestMessageIR:
@@ -278,3 +278,93 @@ class TestConversationIR:
         assert result["meta"]["custom_field"] == "value"
         assert result["meta"]["number"] == 42
         assert result["meta"]["nested"]["key"] == "value"
+
+    def test_conversation_ir_without_artifacts(self):
+        """Test that ConversationIR without artifacts omits key from to_dict()."""
+        conversation = ConversationIR(
+            platform="claude",
+            conversation_id="test",
+            meta={},
+            messages=[]
+        )
+
+        assert conversation.artifacts == []
+        result = conversation.to_dict()
+        assert "artifacts" not in result
+
+    def test_conversation_ir_with_artifacts(self):
+        """Test ConversationIR with artifacts includes them in to_dict()."""
+        artifact = ArtifactIR(
+            id="a0000",
+            title="My Component",
+            version="v1",
+            content="export default function() {}"
+        )
+
+        conversation = ConversationIR(
+            platform="claude",
+            conversation_id="test",
+            meta={},
+            messages=[],
+            artifacts=[artifact]
+        )
+
+        result = conversation.to_dict()
+        assert "artifacts" in result
+        assert len(result["artifacts"]) == 1
+        assert result["artifacts"][0]["title"] == "My Component"
+
+
+class TestArtifactIR:
+    """Tests for ArtifactIR dataclass."""
+
+    def test_create_artifact_ir(self):
+        """Test creating an ArtifactIR instance."""
+        artifact = ArtifactIR(
+            id="a0000",
+            title="My Component",
+            version="v1",
+            content="export default function() {}"
+        )
+
+        assert artifact.id == "a0000"
+        assert artifact.title == "My Component"
+        assert artifact.version == "v1"
+        assert artifact.content == "export default function() {}"
+        assert artifact.meta == {}
+
+    def test_artifact_ir_defaults(self):
+        """Test ArtifactIR default values."""
+        artifact = ArtifactIR(id="a0000", title="Test")
+
+        assert artifact.version is None
+        assert artifact.content == ""
+        assert artifact.meta == {}
+
+    def test_artifact_ir_to_dict(self):
+        """Test ArtifactIR.to_dict() serialization."""
+        artifact = ArtifactIR(
+            id="a0000",
+            title="Component",
+            version="v2",
+            content="code here",
+            meta={"language": "python"}
+        )
+
+        result = artifact.to_dict()
+
+        assert result["id"] == "a0000"
+        assert result["title"] == "Component"
+        assert result["version"] == "v2"
+        assert result["content"] == "code here"
+        assert result["meta"] == {"language": "python"}
+
+    def test_artifact_ir_to_dict_without_version(self):
+        """Test that to_dict() omits version when None."""
+        artifact = ArtifactIR(id="a0000", title="Test", content="body")
+
+        result = artifact.to_dict()
+
+        assert "version" not in result
+        assert result["title"] == "Test"
+        assert result["content"] == "body"

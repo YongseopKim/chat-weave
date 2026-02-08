@@ -135,3 +135,48 @@ class TestUnifiedParser:
 
             assert output_path.exists()
             print(f"✓ {conversation_ir.platform}: {output_path}")
+
+    def test_parse_with_artifacts(self, tmp_path):
+        """Test parsing JSONL file that contains _artifact lines."""
+        jsonl_file = tmp_path / "claude_with_artifacts.jsonl"
+        with open(jsonl_file, "w", encoding="utf-8") as f:
+            f.write('{"_meta": true, "platform": "claude", "url": "https://claude.ai/chat/test-123"}\n')
+            f.write('{"role": "user", "content": "Build a component", "timestamp": "2025-11-29T10:00:00Z"}\n')
+            f.write('{"role": "assistant", "content": "Here it is", "timestamp": "2025-11-29T10:00:05Z"}\n')
+            f.write('{"_artifact": true, "title": "My Framework", "version": "v3", "content": "# Framework\\n\\nCode here"}\n')
+
+        parser = UnifiedParser()
+        conversation_ir = parser.parse(jsonl_file)
+
+        assert conversation_ir.platform == "claude"
+        assert len(conversation_ir.messages) == 2
+        assert len(conversation_ir.artifacts) == 1
+
+        artifact = conversation_ir.artifacts[0]
+        assert artifact.id == "a0000"
+        assert artifact.title == "My Framework"
+        assert artifact.version == "v3"
+        assert artifact.content == "# Framework\n\nCode here"
+
+    def test_parse_without_artifacts_backward_compat(self, chatgpt_jsonl):
+        """Test that existing JSONL files without artifacts still parse correctly."""
+        parser = UnifiedParser()
+        conversation_ir = parser.parse(chatgpt_jsonl)
+
+        assert conversation_ir.artifacts == []
+        result = conversation_ir.to_dict()
+        assert "artifacts" not in result  # omitted when empty
+
+    def test_artifact_extra_fields_become_meta(self, tmp_path):
+        """Test that unknown artifact fields are captured in meta."""
+        jsonl_file = tmp_path / "claude_artifact_meta.jsonl"
+        with open(jsonl_file, "w", encoding="utf-8") as f:
+            f.write('{"_meta": true, "platform": "claude", "url": "https://claude.ai/chat/x"}\n')
+            f.write('{"_artifact": true, "title": "Test", "content": "body", "language": "python", "identifier": "abc"}\n')
+
+        parser = UnifiedParser()
+        conversation_ir = parser.parse(jsonl_file)
+
+        artifact = conversation_ir.artifacts[0]
+        assert artifact.meta["language"] == "python"
+        assert artifact.meta["identifier"] == "abc"

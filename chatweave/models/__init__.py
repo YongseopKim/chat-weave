@@ -1,6 +1,6 @@
 """Data models for intermediate representations."""
 
-from chatweave.models.conversation import ConversationIR, MessageIR
+from chatweave.models.conversation import ArtifactIR, ConversationIR, MessageIR
 from chatweave.models.qa_unit import QAUnit, QAUnitIR
 from chatweave.models.session import (
     MultiModelSessionIR,
@@ -9,6 +9,7 @@ from chatweave.models.session import (
 )
 
 __all__ = [
+    "ArtifactIR",
     "ConversationIR",
     "MessageIR",
     "QAUnit",

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from chatweave.io.jsonl_loader import load_jsonl
-from chatweave.models.conversation import ConversationIR, MessageIR, Platform
+from chatweave.models.conversation import ArtifactIR, ConversationIR, MessageIR, Platform
 from chatweave.parsers.base import ConversationParser
 from chatweave.util.hashing import compute_query_hash
 from chatweave.util.platform_inference import infer_platform
@@ -44,7 +44,7 @@ class UnifiedParser(ConversationParser):
             FileNotFoundError: If file does not exist
         """
         # Load JSONL file
-        metadata, messages = load_jsonl(jsonl_path)
+        metadata, messages, artifacts = load_jsonl(jsonl_path)
 
         # Infer platform with priority: override > metadata > filename
         platform = infer_platform(jsonl_path, metadata, platform_override)
@@ -58,12 +58,18 @@ class UnifiedParser(ConversationParser):
             message_ir = self._convert_message(msg_data, index, platform)
             message_irs.append(message_ir)
 
+        # Convert artifacts to ArtifactIR
+        artifact_irs = [
+            self._convert_artifact(a, i) for i, a in enumerate(artifacts)
+        ]
+
         # Create ConversationIR
         return ConversationIR(
             platform=platform,
             conversation_id=conversation_id,
             meta=metadata,
             messages=message_irs,
+            artifacts=artifact_irs,
         )
 
     def _generate_conversation_id(
@@ -147,4 +153,31 @@ class UnifiedParser(ConversationParser):
             raw_content=raw_content,
             normalized_content=normalized_content,
             query_hash=query_hash,
+        )
+
+    def _convert_artifact(self, artifact_data: dict, index: int) -> ArtifactIR:
+        """Convert artifact dict to ArtifactIR.
+
+        Args:
+            artifact_data: Artifact data dictionary
+            index: Artifact index in conversation
+
+        Returns:
+            ArtifactIR object
+        """
+        artifact_id = f"a{index:04d}"
+        title = artifact_data.get("title", "")
+        version = artifact_data.get("version")
+        content = artifact_data.get("content", "")
+
+        # Remaining fields go into meta
+        known_keys = {"title", "version", "content"}
+        meta = {k: v for k, v in artifact_data.items() if k not in known_keys}
+
+        return ArtifactIR(
+            id=artifact_id,
+            title=title,
+            version=version,
+            content=content,
+            meta=meta,
         )

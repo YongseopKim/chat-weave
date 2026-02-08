@@ -19,7 +19,7 @@ class TestLoadJsonl:
             f.write('{"role": "user", "content": "Hello", "timestamp": "2025-11-29T10:00:05Z"}\n')
             f.write('{"role": "assistant", "content": "Hi there!", "timestamp": "2025-11-29T10:00:10Z"}\n')
 
-        metadata, messages = load_jsonl(jsonl_file)
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
 
         assert metadata["platform"] == "chatgpt"
         assert metadata["url"] == "https://chatgpt.com/c/123"
@@ -30,6 +30,8 @@ class TestLoadJsonl:
         assert messages[0]["content"] == "Hello"
         assert messages[1]["role"] == "assistant"
         assert messages[1]["content"] == "Hi there!"
+
+        assert len(artifacts) == 0
 
     def test_file_not_found(self):
         """Test that FileNotFoundError is raised for non-existent file."""
@@ -86,7 +88,7 @@ class TestLoadJsonl:
             f.write('  \n')
             f.write('{"role": "assistant", "content": "Hi"}\n')
 
-        metadata, messages = load_jsonl(jsonl_file)
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
 
         assert len(messages) == 2
         assert messages[0]["content"] == "Hello"
@@ -106,10 +108,11 @@ class TestLoadJsonl:
         with open(jsonl_file, "w", encoding="utf-8") as f:
             f.write('{"_meta": true, "platform": "chatgpt", "url": "https://chatgpt.com"}\n')
 
-        metadata, messages = load_jsonl(jsonl_file)
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
 
         assert metadata["platform"] == "chatgpt"
         assert len(messages) == 0
+        assert len(artifacts) == 0
 
     def test_utf8_encoding(self, tmp_path):
         """Test that UTF-8 encoding is handled correctly."""
@@ -118,7 +121,7 @@ class TestLoadJsonl:
             f.write('{"_meta": true, "platform": "chatgpt"}\n')
             f.write('{"role": "user", "content": "안녕하세요 👋"}\n')
 
-        metadata, messages = load_jsonl(jsonl_file)
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
 
         assert messages[0]["content"] == "안녕하세요 👋"
 
@@ -128,7 +131,75 @@ class TestLoadJsonl:
         with open(jsonl_file, "w", encoding="utf-8") as f:
             f.write('{"_meta": true, "platform": "chatgpt", "custom_field": "value", "number": 42}\n')
 
-        metadata, messages = load_jsonl(jsonl_file)
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
 
         assert metadata["custom_field"] == "value"
         assert metadata["number"] == 42
+
+
+class TestLoadJsonlArtifacts:
+    """Tests for _artifact line parsing in load_jsonl."""
+
+    def test_artifact_line_parsed(self, tmp_path):
+        """Test that _artifact lines are collected separately from messages."""
+        jsonl_file = tmp_path / "with_artifact.jsonl"
+        with open(jsonl_file, "w", encoding="utf-8") as f:
+            f.write('{"_meta": true, "platform": "claude"}\n')
+            f.write('{"role": "user", "content": "Hello"}\n')
+            f.write('{"role": "assistant", "content": "Here is the code"}\n')
+            f.write('{"_artifact": true, "title": "My Component", "content": "export default function() {}"}\n')
+
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
+
+        assert len(messages) == 2
+        assert len(artifacts) == 1
+        assert artifacts[0]["title"] == "My Component"
+        assert artifacts[0]["content"] == "export default function() {}"
+        assert "_artifact" not in artifacts[0]  # flag stripped
+
+    def test_multiple_artifacts(self, tmp_path):
+        """Test parsing multiple artifact lines."""
+        jsonl_file = tmp_path / "multi_artifact.jsonl"
+        with open(jsonl_file, "w", encoding="utf-8") as f:
+            f.write('{"_meta": true, "platform": "claude"}\n')
+            f.write('{"role": "user", "content": "Build me two things"}\n')
+            f.write('{"role": "assistant", "content": "Done"}\n')
+            f.write('{"_artifact": true, "title": "Component A", "version": "v1", "content": "code A"}\n')
+            f.write('{"_artifact": true, "title": "Component B", "version": "v2", "content": "code B"}\n')
+
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
+
+        assert len(artifacts) == 2
+        assert artifacts[0]["title"] == "Component A"
+        assert artifacts[0]["version"] == "v1"
+        assert artifacts[1]["title"] == "Component B"
+        assert artifacts[1]["version"] == "v2"
+
+    def test_artifact_without_role_does_not_raise(self, tmp_path):
+        """Test that _artifact lines without role/content don't cause ValueError.
+
+        This is the original bug: _artifact lines lack 'role' field, which
+        previously caused ValueError at jsonl_loader.py:56.
+        """
+        jsonl_file = tmp_path / "artifact_no_role.jsonl"
+        with open(jsonl_file, "w", encoding="utf-8") as f:
+            f.write('{"_meta": true, "platform": "claude"}\n')
+            f.write('{"_artifact": true, "title": "Test", "content": "body"}\n')
+
+        # Should NOT raise ValueError
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
+
+        assert len(messages) == 0
+        assert len(artifacts) == 1
+
+    def test_artifact_extra_fields_preserved(self, tmp_path):
+        """Test that extra fields in artifact lines are preserved."""
+        jsonl_file = tmp_path / "artifact_extra.jsonl"
+        with open(jsonl_file, "w", encoding="utf-8") as f:
+            f.write('{"_meta": true, "platform": "claude"}\n')
+            f.write('{"_artifact": true, "title": "Test", "content": "body", "language": "python", "identifier": "abc123"}\n')
+
+        metadata, messages, artifacts = load_jsonl(jsonl_file)
+
+        assert artifacts[0]["language"] == "python"
+        assert artifacts[0]["identifier"] == "abc123"

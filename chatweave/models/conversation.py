@@ -50,6 +50,37 @@ class MessageIR:
 
 
 @dataclass
+class ArtifactIR:
+    """Artifact attached to a conversation (e.g., Claude artifact export).
+
+    Attributes:
+        id: Unique artifact identifier (e.g., "a0000")
+        title: Artifact title
+        version: Artifact version (optional)
+        content: Artifact text content
+        meta: Additional metadata
+    """
+
+    id: str
+    title: str
+    version: Optional[str] = None
+    content: str = ""
+    meta: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        result: Dict[str, Any] = {
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "meta": self.meta,
+        }
+        if self.version is not None:
+            result["version"] = self.version
+        return result
+
+
+@dataclass
 class ConversationIR:
     """Platform-specific conversation representation.
 
@@ -66,13 +97,17 @@ class ConversationIR:
     meta: Dict[str, Any]
     messages: List[MessageIR]
     schema: str = "conversation-ir/v1"
+    artifacts: List[ArtifactIR] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result = {
             "schema": self.schema,
             "platform": self.platform,
             "conversation_id": self.conversation_id,
             "meta": self.meta,
             "messages": [msg.to_dict() for msg in self.messages],
         }
+        if self.artifacts:
+            result["artifacts"] = [a.to_dict() for a in self.artifacts]
+        return result
