@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
 Role = Literal["user", "assistant"]
-Platform = Literal["chatgpt", "claude", "gemini", "grok"]
+Platform = Literal["chatgpt", "claude", "gemini", "grok", "perplexity"]
 
 
 @dataclass
